@@ -1,6 +1,7 @@
 services:
   database:
     image: postgres:alpine
+    container_name: database
     restart: always
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -9,11 +10,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5433:5432"
+    networks:
+      - mynetwork
 
   docling-serve:
-    image: ghcr.io/ds4sd/docling-serve:latest
+    image: ghcr.io/ds4sd/docling-serve-cpu:latest
+    container_name: docling-serve
     restart: always
+    ports:
+      - "5001:5001"
+    networks:
+      - mynetwork
 
   app:
     build:
@@ -22,6 +30,7 @@ services:
     depends_on:
       - database
       - docling-serve
+    container_name: open-health
     volumes:
       - app_data:/app/public/uploads
     ports:
@@ -29,6 +38,12 @@ services:
     restart: always
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge
 
 volumes:
   postgres_data:
