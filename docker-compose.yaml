@@ -19,7 +19,20 @@ services:
     container_name: docling-serve
     restart: always
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
+    networks:
+      - mynetwork
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      - OLLAMA_NUM_PARALLEL=1
+    restart: unless-stopped
     networks:
       - mynetwork
 
@@ -48,3 +61,4 @@ networks:
 volumes:
   postgres_data:
   app_data:
+  ollama:
