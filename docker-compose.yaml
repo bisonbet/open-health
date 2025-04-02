@@ -15,7 +15,7 @@ services:
       - mynetwork
 
   docling-serve:
-    image: ghcr.io/ds4sd/docling-serve:latest
+    image: ghcr.io/ds4sd/docling-serve-cu124:latest
     container_name: docling-serve
     restart: always
     ports:
@@ -26,6 +26,13 @@ services:
   ollama:
     image: ollama/ollama
     container_name: ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: ["gpu"]
+            count: all
     ports:
       - "127.0.0.1:11434:11434"
     volumes:
