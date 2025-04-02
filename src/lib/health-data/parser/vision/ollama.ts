@@ -59,8 +59,8 @@ export class OllamaVisionParser extends BaseVisionParser {
         try {
             return await chain.withRetry({stopAfterAttempt: 3}).invoke(options.input);
         } catch (e: unknown) {
-            if (e?.message?.includes('No tool calls found in the response')) {
-                return {} as HealthCheckupType
+            if ((e as Error)?.message?.includes('No tool calls found in the response')) {
+                return {} as HealthCheckupType;
             }
             throw e;
         }
