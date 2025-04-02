@@ -56,6 +56,13 @@ export class OllamaVisionParser extends BaseVisionParser {
             runName: 'health-data-parser',
             metadata: {input: options.input}
         }))
-        return await chain.withRetry({stopAfterAttempt: 3}).invoke(options.input);
+        try {
+            return await chain.withRetry({stopAfterAttempt: 3}).invoke(options.input);
+        } catch (e: any) {
+            if (e?.message?.includes('No tool calls found in the response')) {
+                return {} as HealthCheckupType
+            }
+            throw e;
+        }
     }
 }
