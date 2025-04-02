@@ -24,7 +24,7 @@
     "providerId": "ollama",
     "name": "Ollama",
     "apiKey": "",
-    "apiURL": "http://localhost:11434",
+    "apiURL": "http://ollama:11434",
     "order": 3
   }
 ]

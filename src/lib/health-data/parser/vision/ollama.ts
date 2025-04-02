@@ -12,7 +12,7 @@ import {currentDeploymentEnv} from "@/lib/current-deployment-env";
 
 export class OllamaVisionParser extends BaseVisionParser {
 
-    private _apiUrl: string = 'http://localhost:11434';
+    private _apiUrl: string = 'http://ollama:11434';
 
     get apiKeyRequired(): boolean {
         return false
