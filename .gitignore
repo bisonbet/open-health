@@ -44,4 +44,11 @@ next-env.d.ts
 # public/uploads
 public/uploads/*
 
+# nginx/certs
+nginx/certs/*
+
+# nginx/conf.d
+nginx/conf.d/*
+!nginx/conf.d/site.example
+
 .trigger
