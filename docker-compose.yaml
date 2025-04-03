@@ -17,6 +17,13 @@ services:
   docling-serve:
     image: ghcr.io/ds4sd/docling-serve:latest
     container_name: docling-serve
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: ["gpu"]
+            device_ids: ["0"] # Assign GPU 0
     restart: always
     ports:
       - "127.0.0.1:5001:5001"
@@ -24,7 +31,7 @@ services:
       - mynetwork
 
   ollama:
-    image: ollama/ollama
+    image: ollama/ollama:0.6.4
     container_name: ollama
     deploy:
       resources:
@@ -32,7 +39,7 @@ services:
           devices:
           - driver: nvidia
             capabilities: ["gpu"]
-            count: all
+            device_ids: ["1"] # Assign GPU 1
     ports:
       - "127.0.0.1:11434:11434"
     volumes:
