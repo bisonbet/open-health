@@ -44,11 +44,13 @@ services:
       - "127.0.0.1:11434:11434"
     volumes:
       - ollama:/root/.ollama
+      - ./ollama-start.sh:/usr/local/bin/ollama-start.sh
     environment:
       - OLLAMA_NUM_PARALLEL=1
     restart: unless-stopped
     networks:
       - mynetwork
+    entrypoint: ["/bin/bash", "/usr/local/bin/ollama-start.sh"]
 
   app:
     build:
