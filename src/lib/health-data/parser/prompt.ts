@@ -1,73 +1,108 @@
-import {BaseMessagePromptTemplateLike} from "@langchain/core/prompts";
+import { BaseMessagePromptTemplateLike } from "@langchain/core/prompts";
 
 export interface MessagePayload {
-    context?: string;
-    image_data?: string;
+    context?: string; // Parsed text
+    image_data?: string; // Base64 encoded image data
 }
 
 const prompts: {
     [key: string]: BaseMessagePromptTemplateLike[]
 } = {
+    // <<< --- REVISED 'both' PROMPT --- >>>
     both: [
         [
             "human",
-            `You are a precise health data analyst, focused on accurately extracting and organizing test results from both parsed text and image inputs.
-Follow instructions step-by-step to ensure that results are as accurate as possible.
-Step 1: Extract Results from Both Image and Parsed Text
-1. Extract all test names and results from both the image and parsed text into two separate tables.
-2. Use the following rules to handle any inconsistencies between the two data sources:
+            `You are a highly precise health data analyst. Your task is to extract test results from BOTH text and image data, cross-validate them, and output them in a **strict JSON format**.
 
-Step 2: Cross-Check and Validate Results from Both Sources
-1. If the parsed text contains errors or irregular formatting (e.g., backslashes, multiple dots, broken numbers, misplaced dots or numbers, or non-sensical values), ignore the parsed text and use the results extracted from the image.
-2. If the image extraction contains unclear or incomplete data (e.g., missing test names or garbled characters), prioritize the parsed text if it is correct.
-3. If both the image and parsed text are reliable, cross-check the results to ensure they match. If there are discrepancies, prioritize the most accurate result based on clarity and completeness.
+**Critical Output Format Requirements:**
+1.  The entire output MUST be a single JSON object.
+2.  The JSON object MUST have a single top-level key named EXACTLY \`test_result\`.
+3.  The value of \`test_result\` MUST be an object.
+4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test (e.g., \`ldl_cholesterol\`, \`uric_acid\`, \`systolic_blood_pressure\`). Use snake_case ONLY. Do NOT use CamelCase or Title Case.
+5.  The value for each snake_case test key MUST be an object with EXACTLY two keys: \`value\` (as a string) and \`unit\` (as a string or null). For example, the structure has keys 'value' and 'unit' like in "value": "122", "unit": "mg/dL" . Do NOT use plain numbers or strings as values.
+6.  If no valid results are found, \`test_result\` should be an empty object.
 
-Step 3: Multi-Component Tests
-1. For multi-component tests (e.g., blood pressure '118/65'), separate values (e.g., systolic: 118, diastolic: 65).
-2. Ensure the results are correctly labeled for left/right (좌/우) or other components when applicable.
+**Step-by-Step Extraction and Validation Process:**
 
-Step 4: Finalizing Results
-1. Create a final table with the most accurate results, combining data from both the image and text inputs, based on the cross-validation above.
-2. Double-check that no results are missing and that each test value is correctly mapped to its corresponding test name.
-3. Store all test results in the 'test_results' field. Do not miss a single result. If no results, set 'test_results' to {{}}.
-4. Do not list the same test name more than once in the arguments. Avoid duplicates and repeats even if there are multiple values.
+Step 1: Independent Extraction
+*   Analyze the provided image data. Extract all identifiable test names, their values, and units.
+*   Analyze the provided parsed text ({context}). Extract all identifiable test names, their values, and units.
 
-Additional Instructions:
-- Ensure that results include only the valid test names from the report.
-- Date Format: yyyy-mm-dd.`
+Step 2: Cross-Validation and Prioritization
+*   Compare the results from the image and the text.
+*   If the parsed text shows signs of errors (e.g., broken numbers, strange characters, nonsensical values), **prioritize the data extracted from the image** for that specific test.
+*   If the image data is unclear or unreadable (e.g., blurry text, cut-off values), **prioritize the data from the parsed text** if it appears clean and correct for that specific test.
+*   If both sources seem reliable but differ, use your best judgment to select the most likely correct value, prioritizing clarity and completeness.
+
+Step 3: Handle Special Cases
+*   For multi-component tests (e.g., blood pressure '118/65'), create **separate snake_case keys** (e.g., \`systolic_blood_pressure\`, \`diastolic_blood_pressure\`) with their respective values formatted using the required value/unit object structure.
+*   If tests are labeled (e.g., left/right), incorporate this into the snake_case key if appropriate (e.g., \`left_vision\`, \`right_vision\`).
+
+Step 4: Final JSON Construction
+*   Consolidate the validated and prioritized results.
+*   Ensure every result is placed inside the \`test_result\` object.
+*   Verify that all keys inside \`test_result\` are **snake_case**.
+*   Verify that all values inside \`test_result\` are objects in the required value/unit format.
+*   Remove duplicate tests. If a test appears multiple times, select the single most accurate validated value.
+
+**Final Reminder:** Adherence to the specified JSON structure (\`test_result\` key, snake_case inner keys, value/unit objects) is paramount. Double-check your final JSON output before finishing.`
         ],
         ["human", 'This is the parsed text:\n{context}'],
-        ["human", [{type: "image_url", image_url: {url: '{image_data}'}}]],
+        ["human", [{ type: "image_url", image_url: { url: '{image_data}' } }]],
     ],
+
+    // <<< --- REVISED 'onlyText' PROMPT --- >>>
     onlyText: [
         [
             "human",
             `As a precise health data analyst focus on accurately extracting test results from the parsed text of the health report.
-Follow these guidelines to extract all actual test results:
-1. Extract only the actual test results. Reference ranges, page numbers, or any other numbers that are not test results should never be extracted as test results.
-2. For multi-component tests (e.g., blood pressure '118/65'), separate values (e.g., systolic: 118, diastolic: 65).
-3. Ensure the results are correctly labeled for left/right (좌/우) or other components when applicable.
-4. Double check to make sure that no results are missing and that each test value is correctly mapped to its corresponding test name.
-5. Store all test results in the 'test_results' field. Do not miss a single result. If no results, set 'test_results' to {{}}.
-6. Do not list the same test name more than once in the arguments. Avoid duplicates and repeats even if there are multiple values.`
+Your primary goal is to output a JSON object adhering strictly to the specified format.
+
+**Required Output Format:**
+1.  The entire output MUST be a single JSON object.
+2.  The JSON object MUST have a single top-level key named EXACTLY \`test_result\`.
+3.  The value of \`test_result\` MUST be an object containing the extracted test results.
+4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test (e.g., \`ldl_cholesterol\`, \`uric_acid\`, \`systolic_blood_pressure\`). Use snake_case ONLY.
+5.  The value for each snake_case test key MUST be an object containing EXACTLY \`value\` (string) and \`unit\` (string or null) keys (e.g., having keys 'value' and 'unit' like in  "value": "122", "unit": "mg/dL" ). Do NOT use plain numbers/strings.
+6.  If no results are found, \`test_result\` MUST be an empty object.
+
+**Extraction Guidelines:**
+1.  Extract only the actual test results from the text. Ignore reference ranges or irrelevant text/numbers.
+2.  For multi-component tests (e.g., blood pressure '118/65'), create separate **snake_case** keys (e.g., \`systolic_blood_pressure\`, \`diastolic_blood_pressure\`) with their values formatted using the required value/unit object structure.
+3.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
+4.  Avoid duplicate test keys within \`test_result\`.
+
+**Final Check:** Ensure the final JSON strictly follows the format described above: \`test_result\` key, **snake_case** inner keys, and value/unit objects inside.`
         ],
         ["human", 'This is the parsed text:\n{context}']
     ],
+
+    // <<< --- REVISED 'onlyImage' PROMPT --- >>>
     onlyImage: [
-        ['human', `As a precise health data analyst focus on accurately extracting test results from the image of the health report.
-Follow these guidelines to extract all actual test results:
-1. Extract only the actual test results. Reference ranges, page numbers, or any other numbers that are not test results should never be extracted as test results.
-- Pay attention to headers or labels that indicate whether a section contains test results or reference values.
-- Values listed under sections labeled as '참고기준치' or similar should be considered reference ranges, not actual test results.
-- Ensure that any value extracted as a test result is not part of a reference range.
-2. For multi-component tests (e.g., blood pressure '118/65'), separate values (e.g., systolic: 118, diastolic: 65).
-3. Ensure the results are correctly labeled for left/right (좌/우) or other components when applicable.
-4. Double check to make sure that no results are missing and that each test value is correctly mapped to its corresponding test name.
-5. Store all test results in the 'test_results' field. Do not miss a single result. If no results, set 'test_results' to {{}}.
-6. Do not list the same test name more than once in the arguments. Avoid duplicates and repeats even if there are multiple values.`],
-        ['human', [{type: "image_url", image_url: {url: '{image_data}'}}]],
+        [
+            "human",
+            `As a precise health data analyst, your task is to accurately extract test results ONLY from the provided image data and format them into a **strict JSON structure**.
+
+**Critical Output Format Requirements:**
+1.  The entire output MUST be a single JSON object.
+2.  The JSON object MUST have a single top-level key named EXACTLY \`test_result\`.
+3.  The value of \`test_result\` MUST be an object.
+4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test (e.g., \`ldl_cholesterol\`, \`uric_acid\`, \`systolic_blood_pressure\`). Use snake_case ONLY.
+5.  The value for each snake_case test key MUST be an object with EXACTLY two keys: \`value\` (as a string) and \`unit\` (as a string or null). For example, the structure has keys 'value' and 'unit' like in "value": "122", "unit": "mg/dL" . Do NOT use plain numbers or strings as values.
+6.  If no valid results are found, \`test_result\` MUST be an empty object.
+
+**Extraction Guidelines (Image Only):**
+1.  Carefully analyze the image to identify test names, values, and units. Be mindful of potential OCR inaccuracies.
+2.  Extract only the actual test results. Do not extract reference ranges or other non-result text/numbers.
+3.  For multi-component tests (e.g., blood pressure '118/65'), create separate **snake_case** keys (e.g., \`systolic_blood_pressure\`, \`diastolic_blood_pressure\`) with their values formatted using the required value/unit object structure.
+4.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
+5.  Avoid duplicate test keys within \`test_result\`. If a test appears multiple times, select the clearest reading.
+
+**Final Check:** Ensure the final JSON strictly follows the format described: \`test_result\` key, **snake_case** inner keys, and value/unit objects inside.`
+        ],
+        ["human", [{ type: "image_url", image_url: { url: '{image_data}' } }]],
     ]
-}
+};
 
 /**
  * Get the appropriate prompt based on the input type
@@ -75,7 +110,7 @@ Follow these guidelines to extract all actual test results:
  * @param excludeImage
  * @param excludeText
  */
-export function getParsePrompt({excludeImage, excludeText}: {
+export function getParsePrompt({ excludeImage, excludeText }: {
     excludeImage: boolean,
     excludeText: boolean
 }): BaseMessagePromptTemplateLike[] {

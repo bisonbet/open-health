@@ -15,7 +15,7 @@ services:
       - mynetwork
 
   docling-serve:
-    image: ghcr.io/ds4sd/docling-serve-cu124:latest
+    image: ghcr.io/ds4sd/docling-serve:latest
     container_name: docling-serve
     restart: always
     ports:
