@@ -18,7 +18,7 @@ const prompts: {
 1.  The entire output MUST be a single JSON object.
 2.  The JSON object MUST have a single top-level key named EXACTLY \`test_result\`.
 3.  The value of \`test_result\` MUST be an object.
-4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test (e.g., \`ldl_cholesterol\`, \`uric_acid\`, \`systolic_blood_pressure\`). Use snake_case ONLY. Do NOT use CamelCase or Title Case.
+4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test. Use snake_case ONLY. Do NOT use CamelCase or Title Case.
 5.  The value for each snake_case test key MUST be an object with EXACTLY two keys: \`value\` (as a string) and \`unit\` (as a string or null). For example, the structure has keys 'value' and 'unit' like in "value": "122", "unit": "mg/dL" . Do NOT use plain numbers or strings as values.
 6.  If no valid results are found, \`test_result\` should be an empty object.
 
@@ -35,7 +35,7 @@ Step 2: Cross-Validation and Prioritization
 *   If both sources seem reliable but differ, use your best judgment to select the most likely correct value, prioritizing clarity and completeness.
 
 Step 3: Handle Special Cases
-*   For multi-component tests (e.g., blood pressure '118/65'), create **separate snake_case keys** (e.g., \`systolic_blood_pressure\`, \`diastolic_blood_pressure\`) with their respective values formatted using the required value/unit object structure.
+*   For multi-component tests (e.g., blood pressure '118/65'), create **separate snake_case keys** with their respective values formatted using the required value/unit object structure.
 *   If tests are labeled (e.g., left/right), incorporate this into the snake_case key if appropriate (e.g., \`left_vision\`, \`right_vision\`).
 
 Step 4: Final JSON Construction
@@ -62,13 +62,13 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 1.  The entire output MUST be a single JSON object.
 2.  The JSON object MUST have a single top-level key named EXACTLY \`test_result\`.
 3.  The value of \`test_result\` MUST be an object containing the extracted test results.
-4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test (e.g., \`ldl_cholesterol\`, \`uric_acid\`, \`systolic_blood_pressure\`). Use snake_case ONLY.
+4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test. Use snake_case ONLY.
 5.  The value for each snake_case test key MUST be an object containing EXACTLY \`value\` (string) and \`unit\` (string or null) keys (e.g., having keys 'value' and 'unit' like in  "value": "122", "unit": "mg/dL" ). Do NOT use plain numbers/strings.
 6.  If no results are found, \`test_result\` MUST be an empty object.
 
 **Extraction Guidelines:**
 1.  Extract only the actual test results from the text. Ignore reference ranges or irrelevant text/numbers.
-2.  For multi-component tests (e.g., blood pressure '118/65'), create separate **snake_case** keys (e.g., \`systolic_blood_pressure\`, \`diastolic_blood_pressure\`) with their values formatted using the required value/unit object structure.
+2.  For multi-component tests (e.g., blood pressure '118/65'), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
 3.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
 4.  Avoid duplicate test keys within \`test_result\`.
 
@@ -87,14 +87,14 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 1.  The entire output MUST be a single JSON object.
 2.  The JSON object MUST have a single top-level key named EXACTLY \`test_result\`.
 3.  The value of \`test_result\` MUST be an object.
-4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test (e.g., \`ldl_cholesterol\`, \`uric_acid\`, \`systolic_blood_pressure\`). Use snake_case ONLY.
+4.  Inside \`test_result\`, EVERY key MUST be the **snake_case** name of the test. Use snake_case ONLY.
 5.  The value for each snake_case test key MUST be an object with EXACTLY two keys: \`value\` (as a string) and \`unit\` (as a string or null). For example, the structure has keys 'value' and 'unit' like in "value": "122", "unit": "mg/dL" . Do NOT use plain numbers or strings as values.
 6.  If no valid results are found, \`test_result\` MUST be an empty object.
 
 **Extraction Guidelines (Image Only):**
 1.  Carefully analyze the image to identify test names, values, and units. Be mindful of potential OCR inaccuracies.
 2.  Extract only the actual test results. Do not extract reference ranges or other non-result text/numbers.
-3.  For multi-component tests (e.g., blood pressure '118/65'), create separate **snake_case** keys (e.g., \`systolic_blood_pressure\`, \`diastolic_blood_pressure\`) with their values formatted using the required value/unit object structure.
+3.  For multi-component tests (e.g., blood pressure '118/65'), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
 4.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
 5.  Avoid duplicate test keys within \`test_result\`. If a test appears multiple times, select the clearest reading.
 
