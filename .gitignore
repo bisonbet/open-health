@@ -46,6 +46,7 @@ public/uploads/*
 
 # nginx/certs
 nginx/certs/*
+!nginx/certs/.gitkeep
 
 # nginx/conf.d
 nginx/conf.d/*

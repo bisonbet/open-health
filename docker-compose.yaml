@@ -1,7 +1,7 @@
 services:
   database:
     image: postgres:alpine
-    container_name: database
+    container_name: oh-database
     restart: always
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -16,7 +16,7 @@ services:
 
   docling-serve:
     image: ghcr.io/ds4sd/docling-serve:latest
-    container_name: docling-serve
+    container_name: oh-docling-serve
     deploy:
       resources:
         reservations:
@@ -32,7 +32,7 @@ services:
 
   ollama:
     image: ollama/ollama:0.6.4
-    container_name: ollama
+    container_name: oh-ollama
     deploy:
       resources:
         reservations:
@@ -63,10 +63,24 @@ services:
     volumes:
       - app_data:/app/public/uploads
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     restart: always
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+    networks:
+      - mynetwork
+
+  nginx:
+    image: nginx:latest
+    container_name: oh-nginx
+    restart: always
+    ports:
+      - "443:443"  # SSL traffic
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro  # SSL certs and keys
+    depends_on:
+      - app
     networks:
       - mynetwork
 
