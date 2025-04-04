@@ -1305,36 +1305,6 @@ export default function SourceAddScreen() {
                                                         label: model.name
                                                     }))}
                                                 />
-
-                                                <ConditionalDeploymentEnv env={['local']}>
-                                                    {visionDataList?.visions?.find(v => v.name === visionParser?.value)?.apiKeyRequired && (
-                                                        <div className="space-y-2">
-                                                            <label className="text-sm font-medium">{t('apiKey')}</label>
-                                                            <input
-                                                                type="password"
-                                                                aria-autocomplete={'none'}
-                                                                autoComplete={'off'}
-                                                                placeholder={t('enterYourAPIKey')}
-                                                                className="w-full p-2 border rounded-md text-sm"
-                                                                value={visionParserApiKey}
-                                                                onChange={(e) => setVisionParserApiKey(e.target.value)}
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {visionDataList?.visions?.find(v => v.name === visionParser?.value)?.apiUrlRequired && (
-                                                        <div className="space-y-2">
-                                                            <input
-                                                                aria-autocomplete={'none'}
-                                                                autoComplete={'off'}
-                                                                placeholder={t('enterYourAPIUrl')}
-                                                                className="w-full p-2 border rounded-md text-sm"
-                                                                value={visionParserApiUrl}
-                                                                onChange={(e) => setVisionParserApiUrl(e.target.value)}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </ConditionalDeploymentEnv>
                                             </div>
                                         </div>
 
@@ -1349,15 +1319,6 @@ export default function SourceAddScreen() {
                                                         {t('documentModelDoclingGithub')}
                                                     </a>
                                                 </span>
-                                                <span className="block">
-                                                        {t('documentModelUpstageDescription')}{' '}
-                                                    <a href="https://www.upstage.ai"
-                                                       className="text-primary hover:underline" target="_blank"
-                                                       rel="noopener noreferrer">
-                                                        {t('documentModelUpstage')}
-                                                        </a>
-                                                    {' '} {t('documentModelUpstageDescription2')}
-                                                    </span>
                                             </p>
                                             <div className="space-y-2">
                                                 <Select
@@ -1388,21 +1349,6 @@ export default function SourceAddScreen() {
                                                         label: model.name
                                                     }))}
                                                 />
-
-                                                <ConditionalDeploymentEnv env={['local']}>
-                                                    {documentDataList?.documents?.find(v => v.name === documentParser?.value)?.apiKeyRequired && (
-                                                        <div className="space-y-2">
-                                                            <label className="text-sm font-medium">{t('apiKey')}</label>
-                                                            <input
-                                                                type="password"
-                                                                placeholder={t('enterYourAPIKey')}
-                                                                className="w-full p-2 border rounded-md text-sm"
-                                                                value={documentParserApiKey}
-                                                                onChange={(e) => setDocumentParserApiKey(e.target.value)}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </ConditionalDeploymentEnv>
                                             </div>
                                         </div>
                                     </div>

@@ -7,8 +7,9 @@
   "Feedback": {
     "helpMessage": "Help OpenHealth solve health problems for you and many others",
     "shareFeedback": "Share Feedback",
-    "needHelpWithYourIssue": "Need Help with Your Issue?",
-    "askADoctor": "Ask a Doctor"
+    "needHelpWithYourIssue": "Help with Your Issue?",
+    "findADoctor": "Find a Doctor near you",
+    "askADoctor": "Ask a Doctor on Reddit"
   },
   "ChatSideBar": {
     "sources": "Sources",

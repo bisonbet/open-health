@@ -16,7 +16,6 @@ import {ChatRole} from "@prisma/client";
 import ChatSettingSideBar from "@/components/chat/chat-setting-side-bar";
 import {useTranslations} from "next-intl";
 import {NavLinks} from "@/components/ui/nav-links";
-import {useSession} from "next-auth/react";
 
 interface ScreenProps {
     isMobile: boolean;
@@ -26,7 +25,6 @@ export default function Screen(
     {isMobile}: ScreenProps
 ) {
     const {id} = useParams<{ id: string }>();
-    const {data: auth} = useSession()
     const t = useTranslations('Chat')
     const tf = useTranslations('Feedback')
 
@@ -149,15 +147,15 @@ export default function Screen(
                                     variant="outline"
                                     size="sm"
                                     className="text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                                    onClick={() => window.open('https://openhealthforall.channel.io', '_blank')}
+                                    onClick={() => window.open('https://www.zocdoc.com/', '_blank')}
                                 >
-                                    {tf('needHelpWithYourIssue')}
+                                    {tf('findADoctor')}
                                 </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     className="text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                                    onClick={() => window.open(`https://tally.so/r/mDZrYq?user_id=${auth?.user?.id}`, '_blank')}
+                                    onClick={() => window.open(`https://www.reddit.com/r/AskDocs`, '_blank')}
                                 >
                                     {tf('askADoctor')}
                                 </Button>
