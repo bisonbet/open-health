@@ -1,26 +1,5 @@
 [
   {
-    "providerId": "openai",
-    "name": "OpenAI",
-    "apiKey": "",
-    "apiURL": "https://api.openai.com/v1",
-    "order": 0
-  },
-  {
-    "providerId": "anthropic",
-    "name": "Anthropic",
-    "apiKey": "",
-    "apiURL": "https://api.anthropic.com/",
-    "order": 1
-  },
-  {
-    "providerId": "google",
-    "name": "Google",
-    "apiKey": "",
-    "apiURL": "https://generativelanguage.googleapis.com/v1beta",
-    "order": 2
-  },
-  {
     "providerId": "ollama",
     "name": "Ollama",
     "apiKey": "",
