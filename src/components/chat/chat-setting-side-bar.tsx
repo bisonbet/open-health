@@ -28,7 +28,6 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
     const [selectedLLMProvider, setSelectedLLMProvider] = useState<LLMProvider>();
     const [selectedLLMProviderModel, setSelectedLLMProviderModel] = useState<LLMProviderModel>();
     const [llmProviderModels, setLLMProviderModels] = useState<LLMProviderModel[]>([]);
-    const [showApiKey, setShowApiKey] = useState(false);
 
     const {
         data: chatRoomData,
@@ -216,33 +215,16 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
                         </SelectContent>
                     </Select>
 
-                    <ConditionalDeploymentEnv env={['local']}>
-                        {selectedLLMProvider && (['ollama', 'openai'].includes(selectedLLMProvider.providerId)) && (
-                            <Input
-                                type="text"
-                                placeholder={`API endpoint (default: ${selectedLLMProvider?.providerId === 'ollama' ? 'http://ollama:11434' : 'https://api.openai.com/v1'})`}
-                                value={selectedLLMProvider?.apiURL}
-                                onChange={(e) => onLLMProviderChange({apiURL: e.target.value})}
-                            />
-                        )}
-                        {selectedLLMProvider?.providerId !== 'ollama' && (
-                            <div className="relative">
-                                <Input
-                                    type={showApiKey ? "text" : "password"}
-                                    placeholder={t('enterApiKey')}
-                                    value={selectedLLMProvider?.apiKey || ''}
-                                    onChange={(e) => onLLMProviderChange({apiKey: e.target.value})}
-                                    className="pr-16"
-                                />
-                                <button
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 text-sm text-gray-500 hover:text-gray-700"
-                                    onClick={() => setShowApiKey(!showApiKey)}
-                                >
-                                    {showApiKey ? t('hide') : t('show')}
-                                </button>
-                            </div>
-                        )}
-                    </ConditionalDeploymentEnv>
+		    	<ConditionalDeploymentEnv env={['local']}>
+			  {selectedLLMProvider?.providerId === 'ollama' && (
+			    <Input
+			      type="text"
+			      placeholder={`API endpoint (default: ${process.env.Ollama_URL || 'http://ollama:11434'})`}
+			      value={selectedLLMProvider.apiURL}
+			      onChange={(e) => onLLMProviderChange({ apiURL: e.target.value })}
+			    />
+			  )}
+			</ConditionalDeploymentEnv>
                 </div>
             </div>
 

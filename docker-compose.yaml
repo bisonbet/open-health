@@ -31,7 +31,7 @@ services:
       - mynetwork
 
   ollama:
-    image: ollama/ollama:0.6.4
+    image: ollama/ollama
     container_name: oh-ollama
     deploy:
       resources:
