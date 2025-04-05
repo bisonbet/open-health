@@ -10,7 +10,7 @@ import documents from "@/lib/health-data/parser/document";
 import {put} from "@vercel/blob";
 import {currentDeploymentEnv} from "@/lib/current-deployment-env";
 import fs from "node:fs";
-import {fromBuffer as pdf2picFromBuffer} from 'pdf2pic'
+import sharp from "sharp";
 import {tasks} from "@trigger.dev/sdk/v3";
 import type {pdfToImages} from "@/trigger/pdf-to-image";
 
@@ -214,55 +214,59 @@ async function inference(inferenceOptions: InferenceOptions) {
  *
  * @returns {Promise<string[]>} - List of image paths
  */
-async function documentToImages({file: filePath}: Pick<SourceParseOptions, 'file'>): Promise<string[]> {
-    const fileResponse = await fetch(filePath);
-    const fileBuffer = Buffer.from(await fileResponse.arrayBuffer())
-    const result = await fileTypeFromBuffer(fileBuffer)
-    const fileHash = await getFileMd5(fileBuffer)
-    if (!result) throw new Error('Invalid file type')
-    const mime = result.mime
-
+async function documentToImages({ file: filePath }: Pick<SourceParseOptions, 'file'>): Promise<string[]> {
+const fileResponse = await fetch(filePath);
+    const fileBuffer = Buffer.from(await fileResponse.arrayBuffer());
+    const result = await fileTypeFromBuffer(fileBuffer);
+    const fileHash = await getFileMd5(fileBuffer);
+    if (!result) throw new Error('Invalid file type');
+    const mime = result.mime;
+  
     // Convert pdf to images, or use the image as is
-    const images: string[] = []
+    const images: string[] = [];
     if (mime === 'application/pdf') {
-        if (currentDeploymentEnv === 'local') {
-            const pdf2picConverter = pdf2picFromBuffer(fileBuffer, {preserveAspectRatio: true})
-            for (const image of await pdf2picConverter.bulk(-1, {responseType: 'base64'})) {
-                if (image.base64) images.push(`data:image/png;base64,${image.base64}`)
-            }
-        } else {
-            const result = await tasks.triggerAndPoll<typeof pdfToImages>(
-                'pdf-to-image',
-                {pdfUrl: filePath},
-                {pollIntervalMs: 5000},
-            )
-            if (result.status === 'COMPLETED' && result.output) {
-                images.push(...result.output.images.map((image) => `data:image/png;base64,${image}`))
-            } else {
-                throw new Error('Failed to convert the pdf to images')
-            }
+      if (currentDeploymentEnv === 'local') {
+        // Use sharp to extract all pages as PNG images
+        const pdf = sharp(fileBuffer);
+        const metadata = await pdf.metadata();
+        const numPages = metadata.pages || 1;
+        for (let i = 0; i < numPages; i++) {
+          const pageBuffer = await sharp(fileBuffer, { page: i }).png().toBuffer();
+          images.push(`data:image/png;base64,${pageBuffer.toString('base64')}`);
         }
+      } else {
+        const result = await tasks.triggerAndPoll<typeof pdfToImages>(
+          'pdf-to-image',
+          { pdfUrl: filePath },
+          { pollIntervalMs: 5000 },
+        );
+        if (result.status === 'COMPLETED' && result.output) {
+          images.push(...result.output.images.map((image) => `data:image/png;base64,${image}`));
+        } else {
+          throw new Error('Failed to convert the pdf to images');
+        }
+      }
     } else {
-        images.push(`data:${mime};base64,${fileBuffer.toString('base64')}`)
+      images.push(`data:${mime};base64,${fileBuffer.toString('base64')}`);
     }
-
+  
     // Write the image data to a file
-    const imagePaths = []
+    const imagePaths = [];
     for (let i = 0; i < images.length; i++) {
-        if (currentDeploymentEnv === 'local') {
-            fs.writeFileSync(`./public/uploads/${fileHash}_${i}.png`, Buffer.from(images[i].split(',')[1], 'base64'))
-            imagePaths.push(`${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${fileHash}_${i}.png`)
-        } else {
-            const blob = await put(
-                `/uploads/${fileHash}_${i}.png`,
-                Buffer.from(images[i].split(',')[1], 'base64'),
-                {access: 'public', contentType: 'image/png'}
-            )
-            imagePaths.push(blob.downloadUrl)
-        }
+      if (currentDeploymentEnv === 'local') {
+        fs.writeFileSync(`./public/uploads/${fileHash}_${i}.png`, Buffer.from(images[i].split(',')[1], 'base64'));
+        imagePaths.push(`${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${fileHash}_${i}.png`);
+      } else {
+        const blob = await put(
+          `/uploads/${fileHash}_${i}.png`,
+          Buffer.from(images[i].split(',')[1], 'base64'),
+          { access: 'public', contentType: 'image/png' }
+        );
+        imagePaths.push(blob.downloadUrl);
+      }
     }
-
-    return imagePaths
+  
+    return imagePaths;
 }
 
 /**
