@@ -84,13 +84,6 @@ export async function POST(
         }
     })
 
-    let apiKey: string
-    if (currentDeploymentEnv === 'local') {
-        apiKey = llmProvider.apiKey // Encryption disabled in local environment due to IV error
-    } else {
-            throw new Error('Unsupported LLM provider');
-    }
-
     const messages = [
         {"role": "system" as const, "content": assistantMode.systemPrompt},
         {

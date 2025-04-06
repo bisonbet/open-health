@@ -21,15 +21,6 @@ export async function GET(
         where: {id}
     });
 
-    // Optional: Decrypt API key if needed for future providers or consistency
-    let apiKey: string;
-    try {
-        apiKey = decrypt(llmProvider.apiKey);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
-        apiKey = '';
-    }
-
     // Explicitly check if it's the Ollama provider
     if (llmProvider.providerId === "ollama") {
         try {
@@ -65,7 +56,7 @@ export async function GET(
                 llmProviderModels: models,
             });
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Catch fetch errors or other unexpected errors
             console.error(`Error fetching models from Ollama (${llmProvider.apiURL || 'default'}):`, error);
             return NextResponse.json<LLMProviderModelListResponse>({ llmProviderModels: [] }, { status: 500 });
