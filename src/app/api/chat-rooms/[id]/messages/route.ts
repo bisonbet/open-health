@@ -89,7 +89,6 @@ export async function POST(
         apiKey = llmProvider.apiKey // Encryption disabled in local environment due to IV error
     } else {
             throw new Error('Unsupported LLM provider');
-        }
     }
 
     const messages = [
