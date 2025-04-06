@@ -35,7 +35,7 @@ Step 2: Cross-Validation and Prioritization
 *   If both sources seem reliable but differ, use your best judgment to select the most likely correct value, prioritizing clarity and completeness.
 
 Step 3: Handle Special Cases
-*   For multi-component tests (e.g., blood pressure '118/65'), create **separate snake_case keys** with their respective values formatted using the required value/unit object structure.
+*   For multi-component tests (e.g., blood pressure), create **separate snake_case keys** with their respective values formatted using the required value/unit object structure.
 *   If tests are labeled (e.g., left/right), incorporate this into the snake_case key if appropriate (e.g., \`left_vision\`, \`right_vision\`).
 
 Step 4: Final JSON Construction
@@ -68,7 +68,7 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 
 **Extraction Guidelines:**
 1.  Extract only the actual test results from the text. Ignore reference ranges or irrelevant text/numbers.
-2.  For multi-component tests (e.g., blood pressure '118/65'), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
+2.  For multi-component tests (e.g., blood pressure), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
 3.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
 4.  Avoid duplicate test keys within \`test_result\`.
 
@@ -94,7 +94,7 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 **Extraction Guidelines (Image Only):**
 1.  Carefully analyze the image to identify test names, values, and units. Be mindful of potential OCR inaccuracies.
 2.  Extract only the actual test results. Do not extract reference ranges or other non-result text/numbers.
-3.  For multi-component tests (e.g., blood pressure '118/65'), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
+3.  For multi-component tests (e.g., blood pressure), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
 4.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
 5.  Avoid duplicate test keys within \`test_result\`. If a test appears multiple times, select the clearest reading.
 
