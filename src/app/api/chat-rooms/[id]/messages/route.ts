@@ -2,9 +2,6 @@ import {NextRequest, NextResponse} from "next/server";
 import prisma, {Prisma} from "@/lib/prisma";
 import {auth} from "@/auth";
 import {currentDeploymentEnv} from "@/lib/current-deployment-env";
-import {ChatOpenAI} from "@langchain/openai";
-import {ChatAnthropic} from "@langchain/anthropic";
-import {ChatGoogleGenerativeAI} from "@langchain/google-genai";
 
 export interface ChatMessage extends Prisma.ChatMessageGetPayload<{
     select: {
@@ -90,19 +87,8 @@ export async function POST(
     let apiKey: string
     if (currentDeploymentEnv === 'local') {
         apiKey = llmProvider.apiKey // Encryption disabled in local environment due to IV error
-    } else if (currentDeploymentEnv === 'cloud') {
-        switch (llmProvider.providerId) {
-            case 'openai':
-                apiKey = process.env.OPENAI_API_KEY as string
-                break;
-            case 'anthropic':
-                apiKey = process.env.ANTHROPIC_API_KEY as string
-                break;
-            case 'google':
-                apiKey = process.env.GOOGLE_API_KEY as string
-                break;
-            default:
-                throw new Error('Unsupported LLM provider');
+    } else {
+            throw new Error('Unsupported LLM provider');
         }
     }
 
@@ -158,54 +144,8 @@ export async function POST(
                             }
                         }
                     }
-                } else if (llmProvider.providerId === 'openai') {
-                    // OpenAI API call
-                    const llmProviderModelId = chatRoom.llmProviderModelId;
-                    if (!llmProviderModelId) throw new Error('No LLM model ID provided');
-                    const openai = new ChatOpenAI({
-                        apiKey,
-                        model: llmProviderModelId,
-                        configuration: {baseURL: llmProvider.apiURL},
-                        streaming: true,
-                    }).withConfig({metadata: {chatRoomId: id}, runName: 'chat'})
-
-                    const chatStream = await openai.stream(messages)
-                    for await (const part of chatStream) {
-                        const deltaContent = part.content.toString()
-                        if (deltaContent !== undefined) messageContent += deltaContent;
-                        controller.enqueue(`${JSON.stringify({content: messageContent})}\n`);
-                    }
-                } else if (llmProvider.providerId === 'anthropic') {
-                    const llmProviderModelId = chatRoom.llmProviderModelId;
-                    if (!llmProviderModelId) throw new Error('No LLM model ID provided');
-                    const anthropic = new ChatAnthropic({
-                        apiKey,
-                        anthropicApiUrl: llmProvider.apiURL,
-                        model: llmProviderModelId,
-                        maxTokens: 4096,
-                    }).withConfig({metadata: {chatRoomId: id}, runName: 'chat'})
-
-                    const chatStream = await anthropic.stream(messages)
-                    for await (const part of chatStream) {
-                        const deltaContent = part.content.toString()
-                        if (deltaContent !== undefined) messageContent += deltaContent;
-                        controller.enqueue(`${JSON.stringify({content: messageContent})}\n`);
-                    }
-                } else if (llmProvider.providerId == 'google') {
-                    const llmProviderModelId = chatRoom.llmProviderModelId;
-                    if (!llmProviderModelId) throw new Error('No LLM model ID provided');
-                    const gemini = new ChatGoogleGenerativeAI({
-                        apiKey,
-                        model: llmProviderModelId
-                    }).withConfig({metadata: {chatRoomId: id}, runName: 'chat'})
-
-                    const chatStream = await gemini.stream(messages)
-                    for await (const part of chatStream) {
-                        const deltaContent = part.content.toString()
-                        if (deltaContent !== undefined) messageContent += deltaContent;
-                        controller.enqueue(`${JSON.stringify({content: messageContent})}\n`);
-                    }
-                } else {
+                } 
+                else {
                     throw new Error('Unsupported LLM provider');
                 }
 
