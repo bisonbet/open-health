@@ -15,7 +15,7 @@ services:
       - mynetwork
 
   docling-serve:
-    image: ghcr.io/ds4sd/docling-serve:latest
+    image: quay.io/docling-project/docling-serve:latest
     container_name: oh-docling-serve
     deploy:
       resources:
