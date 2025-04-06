@@ -1,7 +1,6 @@
 import {NextRequest, NextResponse} from "next/server";
 import prisma, {Prisma} from "@/lib/prisma";
 import {auth} from "@/auth";
-import {currentDeploymentEnv} from "@/lib/current-deployment-env";
 
 export interface ChatMessage extends Prisma.ChatMessageGetPayload<{
     select: {

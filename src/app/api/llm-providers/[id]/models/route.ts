@@ -1,6 +1,5 @@
 import {NextRequest, NextResponse} from "next/server";
 import prisma from "@/lib/prisma";
-import {decrypt} from "@/lib/encryption";
 // import {currentDeploymentEnv} from "@/lib/current-deployment-env"; // Not strictly needed anymore here
 
 export interface LLMProviderModel {
