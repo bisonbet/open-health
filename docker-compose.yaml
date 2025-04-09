@@ -31,7 +31,10 @@ services:
       - mynetwork
 
   ollama:
-    image: ollama/ollama
+    build:
+      context: .
+      dockerfile: ./Containerfile.ollama
+    image: ${OLLAMA_BUILD:-false} == "true" ? oh-ollama : ollama/ollama
     container_name: oh-ollama
     deploy:
       resources:
