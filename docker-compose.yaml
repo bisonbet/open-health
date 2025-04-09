@@ -23,7 +23,7 @@ services:
           devices:
           - driver: nvidia
             capabilities: ["gpu"]
-            device_ids: ["0"] # Assign GPU 0
+            count: 1
     restart: always
     ports:
       - "127.0.0.1:5001:5001"
@@ -39,7 +39,7 @@ services:
           devices:
           - driver: nvidia
             capabilities: ["gpu"]
-            device_ids: ["1"] # Assign GPU 1
+            count: 1
     ports:
       - "127.0.0.1:11434:11434"
     volumes:
