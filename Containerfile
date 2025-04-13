@@ -1,8 +1,6 @@
 FROM node:lts-alpine
 LABEL authors="OpenHealth"
 
-ARG OLLAMA_BUILD
-
 RUN apk add -U graphicsmagick ghostscript vips-dev fftw-dev build-base libpng libpng-dev poppler-utils
 
 WORKDIR /app
