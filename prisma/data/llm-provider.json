@@ -3,7 +3,7 @@
     "providerId": "ollama",
     "name": "Ollama",
     "apiKey": "",
-    "apiURL": "${Ollama_URL}",
+    "apiURL": "${OLLAMA_URL}",
     "order": 3
   }
 ]
