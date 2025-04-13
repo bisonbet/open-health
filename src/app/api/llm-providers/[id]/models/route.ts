@@ -24,7 +24,7 @@ export async function GET(
     if (llmProvider.providerId === "ollama") {
         try {
             // Use configured URL or default
-            const ollamaApiUrl = llmProvider.apiURL || "http://localhost:11434";
+            const ollamaApiUrl = llmProvider.apiURL || "http://ollama:11434";
             const listModelsUrl = new URL("/api/tags", ollamaApiUrl).toString();
 
             const response = await fetch(listModelsUrl);
