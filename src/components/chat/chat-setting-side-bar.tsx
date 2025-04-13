@@ -219,7 +219,7 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
 			  {selectedLLMProvider?.providerId === 'ollama' && (
 			    <Input
 			      type="text"
-			      placeholder={`API endpoint (default: ${process.env.Ollama_URL || 'http://ollama:11434'})`}
+			      placeholder={`API endpoint (default: ${process.env.OLLAMA_URL || 'http://ollama:11434'})`}
 			      value={selectedLLMProvider.apiURL}
 			      onChange={(e) => onLLMProviderChange({ apiURL: e.target.value })}
 			    />
