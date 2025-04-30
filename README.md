@@ -156,8 +156,6 @@ graph LR
 <div align="center">
 
 ### 💫 Share Your Story & Get Updated & Give Feedback
-[![AIDoctor Subreddit](https://img.shields.io/badge/r/AIDoctor-FF4500?style=for-the-badge&logo=reddit&logoColor=white)]()
-[![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)]()
 
 </div>
 
