@@ -73,6 +73,13 @@ interface OcrResultDocument {
 }
 
 export class DoclingDocumentParser extends BaseDocumentParser {
+  private doclingUrl: string;
+
+  constructor() {
+    super();
+    this.doclingUrl = process.env.DOCLING_URL || 'http://docling-serve:5001';
+  }
+
   get apiKeyRequired(): boolean {
     return false;
   }
@@ -147,7 +154,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       console.log("[Docling] FormData built. Sending request now...");
 
       // 3. Send to docling-serve
-      const response = await fetch("http://docling-serve:5001/v1alpha/convert/file", {
+      const response = await fetch(`${this.doclingUrl}/v1alpha/convert/file`, {
         method: "POST",
         headers: {
           ...formData.getHeaders(),
@@ -230,7 +237,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       formData.append("do_ocr", "true");
 
       console.log("[Docling] FormData for parse built. Sending request now...");
-      const response = await fetch("http://docling-serve:5001/v1alpha/convert/file", {
+      const response = await fetch(`${this.doclingUrl}/v1alpha/convert/file`, {
         method: "POST",
         headers: {
           ...formData.getHeaders(),

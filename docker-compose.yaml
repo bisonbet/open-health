@@ -15,15 +15,9 @@ services:
       - mynetwork
 
   docling-serve:
+    profiles: ["docling"] # Added profile for conditional inclusion
     image: quay.io/docling-project/docling-serve:latest
     container_name: oh-docling-serve
-    deploy:
-      resources:
-        reservations:
-          devices:
-          - driver: nvidia
-            capabilities: ["gpu"]
-            count: 1
     restart: always
     ports:
       - "127.0.0.1:5001:5001"
@@ -31,18 +25,9 @@ services:
       - mynetwork
 
   ollama:
-    profiles: ["ollama-build"] # Added profile for conditional inclusion
-    build:
-      context: .
-      dockerfile: ./Containerfile.ollama
+    profiles: ["ollama"] # Added profile for conditional inclusion
+    image: ollama/ollama:latest
     container_name: oh-ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-          - driver: nvidia
-            capabilities: ["gpu"]
-            count: 1
     ports:
       - "127.0.0.1:11434:11434"
     volumes:
@@ -59,6 +44,9 @@ services:
     build:
       context: .
       dockerfile: Containerfile
+      args:
+        - OLLAMA_URL=${OLLAMA_URL}
+        - DOCLING_URL=${DOCLING_URL}
     depends_on:
       - database
       # Removed dependency on docling-serve as it might not always be present
@@ -71,6 +59,8 @@ services:
     restart: always
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+      OLLAMA_URL: ${OLLAMA_URL}
+      DOCLING_URL: ${DOCLING_URL:-http://docling-serve:5001}
     networks:
       - mynetwork
 
