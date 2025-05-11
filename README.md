@@ -30,7 +30,7 @@
 
 - 📊 **Centralized Health Data Input:** Easily consolidate all your health data in one place.
 - 🛠️ **Smart Parsing:** Automatically parses your health data and generates structured data files.
-- 🤝 **Contextual Conversations:** Use the structured data as context for personalized interactions with GPT-powered AI.
+- 🤝 **Contextual Conversations:** Use the structured data as context for personalized interactions with powerful AI.
 
 </details>
 
@@ -50,11 +50,10 @@
       • Symptoms
     </td>
     <td>
-      • LLaMA<br>
+      • Meta LLaMA<br>
+      • Google Gemma<br>
       • DeepSeek-V3<br>
-      • GPT<br>
-      • Claude<br>
-      • Gemini
+      • and more!
     </td>
   </tr>
 </table>
@@ -121,15 +120,38 @@ graph LR
    ```
 
 2. **Setup and Run:**
+
+  For a full, self contained application:
    ```bash
    # Copy environment file
    cp .env.example .env
 
-   # Start the application using Docker/Podman Compose
-   docker/podman compose --env-file .env up -d
+   # Start the application using Docker/Podman Compose with Ollama and Docling with default .env
+   docker/podman compose -f docker-compose.yaml --env-file .env --profile ollama,docling up -d
+
+   # Start the application using Docker/Podman Compose with Ollama and Docling with local NVIDIA GPU support with default .env
+   docker/podman compose -f docker-compose.yaml -f docker-compose.gpu.yml --env-file .env --profile ollama,docling up -d
    ```
 
-   For existing users, use:
+  To use an external docling and/or ollama instance:
+   ```bash
+   # Copy environment file
+   cp .env.example .env
+
+   # Edit environment file - change OLLAMA_URL and/or DOCLING_URL
+   nano .env
+
+   # Start the application using Docker/Podman Compose with an external Ollama and Docling
+   docker/podman compose -f docker-compose.yaml --env-file .env up -d
+
+   # Start the application using Docker/Podman Compose with a local Ollama and external Docling
+   docker/podman compose -f docker-compose.yaml --env-file .env --profile ollama up -d
+
+   # Start the application using Docker/Podman Compose with an external Ollama and local Docling
+   docker/podman compose -f docker-compose.yaml --env-file .env --profile docling up -d
+   ```
+
+   For making a unique encryption key:
    ```bash
    # Generate ENCRYPTION_KEY for .env file:
    # Run the command below and add the output to ENCRYPTION_KEY in .env
@@ -141,11 +163,13 @@ graph LR
    to rebuild the image. Run this also if you make any modifications to the .env file.
 
 3. **Access OpenHealth:**
-   Open your browser and navigate to `http://localhost:3000` to begin using OpenHealth.
+   Open your browser and navigate to `https://localhost` to begin using OpenHealth.
 
-> **Note:** The system consists of two main components: parsing and LLM. For parsing, you can use docling for full local execution, while the LLM component can run fully locally using Ollama.
+> **Note:** The system consists of two main components: document parsing and LLM. 
+For document parsing, we use docling, an open source project lead by IBM.  You can read more here: 
+For LLM chat and vision, we use Ollama and the model(s) of your choice.
 
-> **Note:** On first run, ollama will download two models - gemma3:4b for vision parsing and deepseek-r1:8b for interactive discussion. This will take a bit of time!
+> **Note:** On first run, if you are using the local ollama container, it will download two models - gemma3:4b for vision parsing and deepseek-r1:8b for interactive discussion. This will take a bit of time!  You are welcome to use bigger and/or different models limited only by your own hardware specs.
 
 </details>
 
