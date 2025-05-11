@@ -1329,11 +1329,9 @@ export default function SourceAddScreen() {
                                                     }))}
                                                 />
 
-                                                {visionParser?.value?.toLowerCase() === 'ollama' && (
-                                                    <div className="text-sm text-gray-500">
-                                                        Using Ollama API endpoint: {process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://ollama:11434'}
-                                                    </div>
-                                                )}
+                                                <div className="text-sm text-gray-500">
+                                                    Using Ollama API endpoint: {process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://ollama:11434'}
+                                                </div>
                                             </div>
                                         </div>
 

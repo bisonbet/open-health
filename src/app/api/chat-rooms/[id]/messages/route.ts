@@ -58,8 +58,7 @@ export async function POST(
         chatRoom,
         assistantMode,
         chatMessages,
-        healthDataList,
-        llmProvider
+        healthDataList
     } = await prisma.$transaction(async (prisma) => {
         await prisma.chatMessage.create({data: {content: body.content, role: body.role, chatRoomId: id}});
         const {assistantMode} = await prisma.chatRoom.update({
@@ -72,14 +71,18 @@ export async function POST(
             orderBy: {createdAt: 'asc'}
         })
         const healthDataList = await prisma.healthData.findMany({where: {authorId: user.id}})
-        const chatRoom = await prisma.chatRoom.findUniqueOrThrow({where: {id}})
-        const llmProvider = await prisma.lLMProvider.findUniqueOrThrow({where: {id: chatRoom.llmProviderId}});
+        const chatRoom = await prisma.chatRoom.findUniqueOrThrow({
+            where: {id},
+            include: {
+                assistantMode: true,
+                llmProvider: true
+            }
+        });
         return {
             chatRoom,
             chatMessages,
             assistantMode,
-            healthDataList,
-            llmProvider
+            healthDataList
         }
     })
 
@@ -100,44 +103,41 @@ export async function POST(
             let messageContent = '';
 
             try {
-                if (llmProvider.providerId === 'ollama') {
-                    const response = await fetch(`${llmProvider.apiURL}/api/chat`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            model: chatRoom.llmProviderModelId,
-                            messages: messages,
-                            stream: true,
-                        }),
-                    });
+                const ollamaApiUrl = process.env.NEXT_PUBLIC_OLLAMA_URL || "http://ollama:11434";
+                console.log(`Attempting to connect to Ollama at: ${ollamaApiUrl}`);
+                const response = await fetch(`${ollamaApiUrl}/api/chat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        model: chatRoom.llmProviderModelId,
+                        messages: messages,
+                        stream: true,
+                    }),
+                });
 
-                    const reader = response.body?.getReader();
-                    if (!reader) throw new Error('No reader available');
+                const reader = response.body?.getReader();
+                if (!reader) throw new Error('No reader available');
 
-                    while (true) {
-                        const {done, value} = await reader.read();
-                        if (done) break;
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
 
-                        const chunk = new TextDecoder().decode(value);
-                        const lines = chunk.split('\n').filter(line => line.trim());
+                    const chunk = new TextDecoder().decode(value);
+                    const lines = chunk.split('\n').filter(line => line.trim());
 
-                        for (const line of lines) {
-                            if (line.includes('[DONE]')) continue;
-                            try {
-                                const json = JSON.parse(line);
-                                const content = json.message?.content;
-                                if (content) {
-                                    messageContent += content;
-                                    controller.enqueue(`${JSON.stringify({content: messageContent})}\n`);
-                                }
-                            } catch (e) {
-                                console.error('Error parsing JSON:', e);
+                    for (const line of lines) {
+                        if (line.includes('[DONE]')) continue;
+                        try {
+                            const json = JSON.parse(line);
+                            const content = json.message?.content;
+                            if (content) {
+                                messageContent += content;
+                                controller.enqueue(`${JSON.stringify({content: messageContent})}\n`);
                             }
+                        } catch (e) {
+                            console.error('Error parsing JSON:', e);
                         }
                     }
-                } 
-                else {
-                    throw new Error('Unsupported LLM provider');
                 }
 
                 // Save to prisma after the stream is done
