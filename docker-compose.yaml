@@ -67,7 +67,7 @@ services:
     container_name: oh-nginx
     restart: always
     ports:
-      - "443:443"  # SSL traffic
+      - "25025:25025"  # SSL traffic
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/certs:/etc/nginx/certs:ro  # SSL certs and keys

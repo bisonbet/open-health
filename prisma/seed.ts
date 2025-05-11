@@ -12,7 +12,7 @@ async function main() {
     // Update Ollama provider with environment variable
     const ollamaProvider = llmProviderData.find((p: any) => p.providerId === 'ollama')
     if (ollamaProvider) {
-        ollamaProvider.apiURL = process.env.OLLAMA_URL || 'http://ollama:11434'
+        ollamaProvider.apiURL = process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://ollama:11434'
     }
 
     // Upsert the providers

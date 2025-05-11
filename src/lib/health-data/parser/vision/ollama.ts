@@ -14,7 +14,7 @@ import { ZodError } from "zod"; // Assuming zod is used for HealthCheckupSchema
 
 export class OllamaVisionParser extends BaseVisionParser {
 
-    private _apiUrl: string = process.env.OLLAMA_URL || 'http://ollama:11434';
+    private _apiUrl: string = process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://ollama:11434';
 
     get apiKeyRequired(): boolean {
         return false
