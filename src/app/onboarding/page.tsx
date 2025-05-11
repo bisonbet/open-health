@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {AnimatePresence, motion} from 'framer-motion';
 import {Card, CardContent} from '@/components/ui/card';
 import {toast} from 'sonner';
@@ -38,9 +38,46 @@ export default function OnboardingPage() {
     const [medicalRecords, setMedicalRecords] = useState<File[]>([]);
     const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
+    const submit = useCallback(async () => {
+        // Upload All Files
+        await Promise.all(
+            medicalRecords.map(async (file) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('visionParser', 'OpenAI');
+                formData.append('visionParserModel', 'gpt-4o');
+                formData.append('documentParser', 'Upstage');
+                formData.append('documentParserModel', 'document-parse');
+
+                try {
+                    await fetch('/api/health-data', {method: 'POST', body: formData});
+                } catch (error) {
+                    console.error(error);
+                }
+            })
+        )
+
+        const chatRooms = await onboardingSubmit({symptoms: healthConcerns, personalInfo});
+        const chatRoomIds = chatRooms.map((chatRoom) => chatRoom.id)
+
+        // Initial Chat Messages
+        await Promise.all(
+            chatRoomIds.map(async chatRoomId =>
+                fetch(`/api/chat-rooms/${chatRoomId}/messages`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({content: t('message'), role: 'USER'})
+                })
+            )
+        )
+
+        // redirect to /
+        redirect('/')
+    }, [medicalRecords, healthConcerns, personalInfo, t]);
+
     useEffect(() => {
         if (currentStep === 5) submit();
-    }, [currentStep]);
+    }, [currentStep, submit]);
 
     const validateCurrentStep = () => {
         switch (currentStep) {
@@ -91,43 +128,6 @@ export default function OnboardingPage() {
             setCurrentStep(5);
         }
     };
-
-    const submit = async () => {
-        // Upload All Files
-        await Promise.all(
-            medicalRecords.map(async (file) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('visionParser', 'OpenAI');
-                formData.append('visionParserModel', 'gpt-4o');
-                formData.append('documentParser', 'Upstage');
-                formData.append('documentParserModel', 'document-parse');
-
-                try {
-                    await fetch('/api/health-data', {method: 'POST', body: formData});
-                } catch (error) {
-                    console.error(error);
-                }
-            })
-        )
-
-        const chatRooms = await onboardingSubmit({symptoms: healthConcerns, personalInfo});
-        const chatRoomIds = chatRooms.map((chatRoom) => chatRoom.id)
-
-        // Initial Chat Messages
-        await Promise.all(
-            chatRoomIds.map(async chatRoomId =>
-                fetch(`/api/chat-rooms/${chatRoomId}/messages`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({content: t('message'), role: 'USER'})
-                })
-            )
-        )
-
-        // redirect to /
-        redirect('/')
-    }
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">

@@ -49,8 +49,6 @@ services:
         - DOCLING_URL=${DOCLING_URL}
     depends_on:
       - database
-      # Removed dependency on docling-serve as it might not always be present
-      # Consider adding docling-serve to the ollama-gpu profile if they always go together
     container_name: open-health
     volumes:
       - app_data:/app/public/uploads

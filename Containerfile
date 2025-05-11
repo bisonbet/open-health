@@ -24,13 +24,27 @@ ARG DOCLING_URL
 RUN echo "Build ARG OLLAMA_URL: ${OLLAMA_URL}"
 RUN echo "Build ARG DOCLING_URL: ${DOCLING_URL}"
 
-# Set environment variables from build arguments
+# Check if OLLAMA_URL is using the default value
+RUN if [ "${OLLAMA_URL}" = "http://ollama:11434" ]; then \
+    echo "WARNING: Using default OLLAMA_URL value. This might not be what you want."; \
+    echo "To use a different OLLAMA_URL:"; \
+    echo "1. Unset the environment variable: unset OLLAMA_URL"; \
+    echo "2. Set the correct value in your .env file"; \
+    echo "3. Rebuild with: docker compose -f docker-compose.yaml --env-file .env build --no-cache app"; \
+    exit 1; \
+fi
+
+# Set environment variables from build arguments with explicit default values
 ENV OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
 ENV DOCLING_URL=${DOCLING_URL:-http://docling-serve:5001}
 
 # Debug: Print environment variables
 RUN echo "ENV OLLAMA_URL: ${OLLAMA_URL}"
 RUN echo "ENV DOCLING_URL: ${DOCLING_URL}"
+
+# Debug: Print the actual environment variable value
+RUN env | grep OLLAMA_URL
+RUN env | grep DOCLING_URL
 
 # Build the application, create user, and set permissions
 RUN npm run build && \

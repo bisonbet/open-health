@@ -4,7 +4,7 @@
 
 import {Document, Page, pdfjs} from 'react-pdf';
 import React, {ChangeEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Activity, ChevronLeft, ChevronRight, FileText, Loader2, Plus, Trash2, User} from 'lucide-react';
+import {Activity, ChevronLeft, ChevronRight, FileText, Loader2, Plus, Trash2, User, Database} from 'lucide-react';
 import {Button} from "@/components/ui/button";
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,} from "@/components/ui/dialog";
 import useSWR from "swr";
@@ -23,7 +23,6 @@ import {HealthDataGetResponse} from "@/app/api/health-data/[id]/route";
 import {HealthDataParserDocumentListResponse} from "@/app/api/health-data-parser/documents/route";
 import {HealthDataParserVisionModelListResponse} from "@/app/api/health-data-parser/visions/[id]/models/route";
 import {HealthDataParserDocumentModelListResponse} from "@/app/api/health-data-parser/documents/[id]/models/route";
-import {ConditionalDeploymentEnv} from "@/components/common/deployment-env";
 import {useTranslations} from "next-intl";
 import {countries} from "@/lib/countries";
 
@@ -60,6 +59,7 @@ interface Field {
 interface AddSourceDialogProps {
     onFileUpload: (e: ChangeEvent<HTMLInputElement>) => void;
     onAddSymptoms: (date: string) => void;
+    onImportExternalHealth: () => void;
     isSetUpVisionParser: boolean;
     isSetUpDocumentParser: boolean;
 }
@@ -194,7 +194,8 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                                                              isSetUpVisionParser,
                                                              isSetUpDocumentParser,
                                                              onFileUpload,
-                                                             onAddSymptoms
+                                                             onAddSymptoms,
+                                                             onImportExternalHealth
                                                          }) => {
     const t = useTranslations('SourceManagement')
 
@@ -226,6 +227,11 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
         const today = new Date().toISOString().split('T')[0];
         onAddSymptoms(today);
         setOpen(false);
+    };
+
+    const handleImportExternalHealth = () => {
+        // TODO: Implement external health data import
+        console.log('Import external health data');
     };
 
     return (
@@ -277,6 +283,17 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                             <div className="flex-1 text-left">
                                 <h3 className="font-medium">{t('uploadSymptoms')}</h3>
                                 <p className="text-sm text-gray-500">{t('uploadSymptomsDescription')}</p>
+                            </div>
+                        </button>
+
+                        <button
+                            className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 w-full"
+                            onClick={onImportExternalHealth}
+                        >
+                            <Database className="w-6 h-6 text-gray-500"/>
+                            <div className="flex-1 text-left">
+                                <h3 className="font-medium">{t('importExternalHealth')}</h3>
+                                <p className="text-sm text-gray-500">{t('importExternalHealthDescription')}</p>
                             </div>
                         </button>
                     </div>
@@ -502,7 +519,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
 
                 return getNearestBoundingBox(aFocusedWords[0].boundingBox, bFocusedWords[0].boundingBox);
             })
-    }, [getFocusedWords, page, currentPageTestResults, healthData, dataPerPage])
+    }, [getFocusedWords, page, currentPageTestResults, healthData, dataPerPage, userBloodTestResults?.test_result])
 
     const getFields = (): Field[] => {
         switch (healthData.type) {
@@ -608,7 +625,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
             };
         }
 
-    }, [loading, focusedItem, getFocusedWords, ocr, userBloodTestResults?.test_result, allInputsBlurred, page]);
+    }, [loading, focusedItem, getFocusedWords, ocr, userBloodTestResults?.test_result, allInputsBlurred, page, currentPageTestResults, userBloodTestResultsPage]);
 
     useEffect(() => {
         document.querySelector('#test-result')?.scrollTo(0, 0);
@@ -1202,6 +1219,11 @@ export default function SourceAddScreen() {
         }
     }, [documentModelDataList, documentParserModel]);
 
+    const handleImportExternalHealth = () => {
+        // TODO: Implement external health data import
+        console.log('Import external health data');
+    };
+
     return (
         <div className="flex flex-col h-screen">
             <div className="h-14 border-b px-4 flex items-center justify-between">
@@ -1214,7 +1236,8 @@ export default function SourceAddScreen() {
                             isSetUpVisionParser={visionParser !== undefined && visionParserModel !== undefined && (!visionParserApiKeyRequired || visionParserApiKey.length > 0)}
                             isSetUpDocumentParser={documentParser !== undefined && documentParserModel !== undefined && (!documentParserApiKeyRequired || documentParserApiKey.length > 0)}
                             onFileUpload={handleFileUpload}
-                            onAddSymptoms={handleAddSymptoms}/>
+                            onAddSymptoms={handleAddSymptoms}
+                            onImportExternalHealth={handleImportExternalHealth}/>
                         <div className="flex-1 overflow-y-auto">
                             {healthDataList?.healthDataList?.map((item) => (
                                 <HealthDataItem
@@ -1305,6 +1328,12 @@ export default function SourceAddScreen() {
                                                         label: model.name
                                                     }))}
                                                 />
+
+                                                {visionParser?.value?.toLowerCase() === 'ollama' && (
+                                                    <div className="text-sm text-gray-500">
+                                                        Using Ollama API endpoint: {process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://ollama:11434'}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 

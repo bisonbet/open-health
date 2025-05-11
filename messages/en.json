@@ -87,6 +87,8 @@
     "uploadFilesDescription": "Add images or PDF files.",
     "uploadSymptoms": "New Symptoms",
     "uploadSymptomsDescription": "Record today's symptoms.",
+    "importExternalHealth": "Import External Health",
+    "importExternalHealthDescription": "Import health data from other sources.",
     "date": "Date",
     "endDate": "End Date",
     "description": "Description",

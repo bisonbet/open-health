@@ -1,9 +1,8 @@
 'use client';
 
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
 import useSWR from "swr";
 import {AssistantMode, AssistantModeListResponse} from "@/app/api/assistant-modes/route";
 import {ChatRoomGetResponse} from "@/app/api/chat-rooms/[id]/route";
@@ -11,7 +10,6 @@ import {AssistantModePatchRequest} from "@/app/api/assistant-modes/[id]/route";
 import {LLMProvider, LLMProviderListResponse} from "@/app/api/llm-providers/route";
 import {LLMProviderModel, LLMProviderModelListResponse} from "@/app/api/llm-providers/[id]/models/route";
 import {cn} from "@/lib/utils";
-import {ConditionalDeploymentEnv} from "@/components/common/deployment-env";
 import {useTranslations} from "next-intl";
 import Link from "next/link";
 import {Plus} from "lucide-react";
@@ -39,67 +37,16 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
 
     const {
         data: llmProvidersData,
-        mutate: llmProvidersMutate
     } = useSWR<LLMProviderListResponse>('/api/llm-providers', async (url: string) => {
         const response = await fetch(url);
         return response.json();
     })
 
-    useEffect(() => {
-        onChangeChatRoom({
-            llmProviderModelId: selectedLLMProviderModel?.id
-        })
-    }, [selectedLLMProviderModel]);
-
-    // Initialize assistant mode from localStorage or chatRoomData
-    useEffect(() => {
-        if (!chatRoomData?.chatRoom.assistantMode) return;
-
-        // If no saved prompt, use the current one and save it
-        setSelectedAssistantMode(chatRoomData.chatRoom.assistantMode);
-    }, [chatRoomData?.chatRoom.assistantMode?.id]);
-
-    useEffect(() => {
-        const chatRoom = chatRoomData?.chatRoom;
-        if (!chatRoom) return;
-
-        const llmProviders = llmProvidersData?.llmProviders || [];
-        const models = llmProviderModels || [];
-
-        if (selectedLLMProvider === undefined && llmProviders.length > 0) {
-            setSelectedLLMProvider(llmProviders.find((provider) => provider.id === chatRoom.llmProviderId) || llmProviders[0]);
-        }
-
-        if (selectedLLMProviderModel === undefined && models.length > 0) {
-            setSelectedLLMProviderModel(models.find((model) => model.id === chatRoom.llmProviderModelId) || models[0]);
-        }
-    }, [chatRoomData, llmProvidersData, llmProviderModels]);
-
-    const {
-        data: assistantModesData,
-        mutate: assistantModesMutate
-    } = useSWR<AssistantModeListResponse>('/api/assistant-modes', async (url: string) => {
-        const response = await fetch(url);
-        return response.json();
-    })
-    const assistantModes = useMemo(() => assistantModesData?.assistantModes || [], [assistantModesData]);
-
-    // Fetch models when LLM is selected
-    useEffect(() => {
-        if (!selectedLLMProvider) return;
-        const fetchLLMProviderModels = async () => {
-            const response = await fetch(`/api/llm-providers/${selectedLLMProvider.id}/models`)
-            const data: LLMProviderModelListResponse = await response.json();
-            setLLMProviderModels(data.llmProviderModels || []);
-        }
-        fetchLLMProviderModels();
-    }, [selectedLLMProvider]);
-
-    const onChangeChatRoom = async ({
-                                        assistantModeId,
-                                        llmProviderId,
-                                        llmProviderModelId,
-                                    }: {
+    const onChangeChatRoom = useCallback(async ({
+        assistantModeId,
+        llmProviderId,
+        llmProviderModelId,
+    }: {
         assistantModeId?: string
         llmProviderId?: string
         llmProviderModelId?: string | null
@@ -128,7 +75,57 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
             }
         });
         setSelectedAssistantMode(updatedAssistantMode);
-    }
+    }, [chatRoomData, chatRoomId, chatRoomMutate]);
+
+    useEffect(() => {
+        onChangeChatRoom({
+            llmProviderModelId: selectedLLMProviderModel?.id
+        })
+    }, [selectedLLMProviderModel, onChangeChatRoom]);
+
+    // Initialize assistant mode from localStorage or chatRoomData
+    useEffect(() => {
+        if (!chatRoomData?.chatRoom.assistantMode) return;
+
+        // If no saved prompt, use the current one and save it
+        setSelectedAssistantMode(chatRoomData.chatRoom.assistantMode);
+    }, [chatRoomData?.chatRoom.assistantMode]);
+
+    useEffect(() => {
+        const chatRoom = chatRoomData?.chatRoom;
+        if (!chatRoom) return;
+
+        const llmProviders = llmProvidersData?.llmProviders || [];
+        const models = llmProviderModels || [];
+
+        if (selectedLLMProvider === undefined && llmProviders.length > 0) {
+            setSelectedLLMProvider(llmProviders.find((provider) => provider.id === chatRoom.llmProviderId) || llmProviders[0]);
+        }
+
+        if (selectedLLMProviderModel === undefined && models.length > 0) {
+            setSelectedLLMProviderModel(models.find((model) => model.id === chatRoom.llmProviderModelId) || models[0]);
+        }
+    }, [chatRoomData, llmProvidersData, llmProviderModels, selectedLLMProvider, selectedLLMProviderModel]);
+
+    const {
+        data: assistantModesData,
+        mutate: assistantModesMutate
+    } = useSWR<AssistantModeListResponse>('/api/assistant-modes', async (url: string) => {
+        const response = await fetch(url);
+        return response.json();
+    })
+    const assistantModes = useMemo(() => assistantModesData?.assistantModes || [], [assistantModesData]);
+
+    // Fetch models when LLM is selected
+    useEffect(() => {
+        if (!selectedLLMProvider) return;
+        const fetchLLMProviderModels = async () => {
+            const response = await fetch(`/api/llm-providers/${selectedLLMProvider.id}/models`)
+            const data: LLMProviderModelListResponse = await response.json();
+            setLLMProviderModels(data.llmProviderModels || []);
+        }
+        fetchLLMProviderModels();
+    }, [selectedLLMProvider]);
 
     const onChangeAssistantMode = async (assistantModeId: string, body: AssistantModePatchRequest) => {
         const response = await fetch(`/api/assistant-modes/${assistantModeId}`, {
@@ -147,33 +144,6 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
                 return assistantMode;
             }) || []
         })
-    }
-
-    const onLLMProviderChange = async ({
-                                           apiKey,
-                                           apiURL,
-                                       }: {
-        apiKey?: string,
-        apiURL?: string,
-    }) => {
-        if (!selectedLLMProvider) return;
-
-        const data = {
-            ...selectedLLMProvider,
-            apiKey: apiKey || selectedLLMProvider.apiKey,
-            apiURL: apiURL || selectedLLMProvider.apiURL
-        };
-        setSelectedLLMProvider(data);
-        await fetch(`/api/llm-providers/${selectedLLMProvider.id}`, {
-            method: 'PATCH',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(data),
-        });
-        await llmProvidersMutate();
-        setSelectedLLMProvider(data)
-
-        // Patch ChatRoom with new LLMProvider
-        await onChangeChatRoom({llmProviderId: selectedLLMProvider.id, llmProviderModelId: null});
     }
 
     return <div className="h-full overflow-y-auto">
@@ -215,16 +185,11 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
                         </SelectContent>
                     </Select>
 
-		    	<ConditionalDeploymentEnv env={['local']}>
-			  {selectedLLMProvider?.providerId === 'ollama' && (
-			    <Input
-			      type="text"
-			      placeholder={`API endpoint (default: ${process.env.OLLAMA_URL || 'http://ollama:11434'})`}
-			      value={selectedLLMProvider.apiURL}
-			      onChange={(e) => onLLMProviderChange({ apiURL: e.target.value })}
-			    />
-			  )}
-			</ConditionalDeploymentEnv>
+                    {selectedLLMProvider?.providerId === 'ollama' && (
+                        <div className="text-sm text-gray-500">
+                            Using Ollama API endpoint: {process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://ollama:11434'}
+                        </div>
+                    )}
                 </div>
             </div>
 
