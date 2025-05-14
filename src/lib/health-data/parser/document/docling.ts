@@ -137,14 +137,14 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       // 2. Build form data just like your working curl
       const formData = new FormData();
       formData.append("ocr_engine", "easyocr");
-      formData.append("pdf_backend", "dlparse_v2");
+      formData.append("pdf_backend", "dlparse_v4");
       formData.append("from_formats", "pdf");
       formData.append("from_formats", "docx");
       formData.append("from_formats", "image");
       formData.append("force_ocr", "false");
       formData.append("image_export_mode", "placeholder");
       formData.append("ocr_lang", "en");
-      formData.append("table_mode", "fast");
+      formData.append("table_mode", "accurate");
       formData.append("files", fileData, fileName);
       formData.append("abort_on_error", "false");
       formData.append("to_formats", "json");
@@ -222,14 +222,14 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       // Build the multipart form data
       const formData = new FormData();
       formData.append("ocr_engine", "easyocr");
-      formData.append("pdf_backend", "dlparse_v2");
+      formData.append("pdf_backend", "dlparse_v4");
       formData.append("from_formats", "pdf");
       formData.append("from_formats", "docx");
       formData.append("from_formats", "image");
       formData.append("force_ocr", "true");
       formData.append("image_export_mode", "placeholder");
       formData.append("ocr_lang", "en");
-      formData.append("table_mode", "fast");
+      formData.append("table_mode", "accurate");
       formData.append("files", fileData, fileName);
       formData.append("abort_on_error", "false");
       formData.append("to_formats", "md");
