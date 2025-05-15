@@ -59,7 +59,7 @@ export class OllamaVisionParser extends BaseVisionParser {
         });
         const messages = options.messages || ChatPromptTemplate.fromMessages([]);
         // <<< --- ADDED LOGGING HERE --- >>>
-        console.log("Ollama Prompt Messages Input (options.messages):", JSON.stringify(options.messages, null, 2));
+        // console.log("Ollama Prompt Messages Input (options.messages):", JSON.stringify(options.messages, null, 2));
 
         const chain = messages.pipe(llm).pipe(new JsonOutputParser());
 
@@ -68,7 +68,7 @@ export class OllamaVisionParser extends BaseVisionParser {
             // Increased retry attempts slightly
             const result = await chain.withRetry({ stopAfterAttempt: 5 }).invoke(options.input);
 
-            console.log("Ollama Raw JSON Output:", result);
+            // console.log("Ollama Raw JSON Output:", result);
 
             let dataToValidate: unknown = result;
             
@@ -92,7 +92,7 @@ export class OllamaVisionParser extends BaseVisionParser {
 
                     // Subcase 1.1: A known incorrect key was found (e.g., 'test_results')
                     if (foundIncorrectKey) {
-                        console.log(`Transforming key: Renaming '${foundIncorrectKey}' to '${expectedKey}' and extracting value...`);
+                        // console.log(`Transforming key: Renaming '${foundIncorrectKey}' to '${expectedKey}' and extracting value...`);
                         // Preserve other potential top-level keys (like date/name) alongside the incorrect test key
                         const baseData: { [key: string]: unknown } = {};
                         for (const topKey in dataObject) {
@@ -105,26 +105,26 @@ export class OllamaVisionParser extends BaseVisionParser {
                             ...baseData,
                             [expectedKey]: dataObject[foundIncorrectKey] 
                         };
-                        console.log("Transformed Data (Incorrect Key Renamed):", dataToValidate);
+                        // console.log("Transformed Data (Incorrect Key Renamed):", dataToValidate);
                     } 
                     // Subcase 1.2: Correct key is missing AND no known incorrect keys were found
                     // Assume the entire object is the flat test data that needs wrapping.
                     else {
-                        console.warn(`Expected key '${expectedKey}' not found, and no known alternatives found. Assuming the entire result object needs to be nested under '${expectedKey}'. Performing structural transformation.`);
+                        // console.warn(`Expected key '${expectedKey}' not found, and no known alternatives found. Assuming the entire result object needs to be nested under '${expectedKey}'. Performing structural transformation.`);
                         dataToValidate = { [expectedKey]: dataToValidate };
-                        console.log("Transformed Data (Structurally Wrapped):", dataToValidate);
+                        // console.log("Transformed Data (Structurally Wrapped):", dataToValidate);
                     }
                 }
                 // Case 2: Correct key ('test_result') was already present - do nothing.
                 else {
-                   console.log(`Correct key '${expectedKey}' found. No transformation needed.`);
+                   // console.log(`Correct key '${expectedKey}' found. No transformation needed.`);
                 }
             }
             // Combined Transformation Logic Block End
 
             // Explicitly validate the potentially transformed JSON against the Zod schema
             const validatedResult = HealthCheckupSchema.parse(dataToValidate);
-            console.log("Ollama Parsed and Validated Result:", validatedResult);
+            // console.log("Ollama Parsed and Validated Result:", validatedResult);
             return validatedResult;
 
         } catch (e: unknown) {
