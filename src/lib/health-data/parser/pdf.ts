@@ -327,9 +327,9 @@ export async function parseHealthData(options: SourceParseOptions) {
   // Document Parser
   const documentParser =
     options.documentParser || {
-      parser: "Upstage",
+      parser: "Docling",
       model: "document-parse",
-      apiKey: process.env.UPSTAGE_API_KEY as string,
+      apiKey: "",  // Docling doesn't require an API key
     };
 
   // Prepare images
