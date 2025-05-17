@@ -101,6 +101,7 @@ export async function POST(
     const responseStream = new ReadableStream({
         async start(controller) {
             let messageContent = '';
+            let isStreamClosed = false;
 
             try {
                 const ollamaApiUrl = process.env.NEXT_PUBLIC_OLLAMA_URL || "http://ollama:11434";
@@ -114,6 +115,10 @@ export async function POST(
                         stream: true,
                     }),
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
                 const reader = response.body?.getReader();
                 if (!reader) throw new Error('No reader available');
@@ -130,7 +135,7 @@ export async function POST(
                         try {
                             const json = JSON.parse(line);
                             const content = json.message?.content;
-                            if (content) {
+                            if (content && !isStreamClosed) {
                                 messageContent += content;
                                 controller.enqueue(`${JSON.stringify({content: messageContent})}\n`);
                             }
@@ -141,24 +146,31 @@ export async function POST(
                 }
 
                 // Save to prisma after the stream is done
-                await prisma.$transaction(async (prisma) => {
-                    await prisma.chatMessage.create({
-                        data: {
-                            content: messageContent,
-                            role: 'ASSISTANT',
-                            chatRoomId: id
-                        }
+                if (!isStreamClosed) {
+                    await prisma.$transaction(async (prisma) => {
+                        await prisma.chatMessage.create({
+                            data: {
+                                content: messageContent,
+                                role: 'ASSISTANT',
+                                chatRoomId: id
+                            }
+                        });
+                        await prisma.chatRoom.update({
+                            where: {id}, data: {lastActivityAt: new Date(), name: messageContent}
+                        })
                     });
-                    await prisma.chatRoom.update({
-                        where: {id}, data: {lastActivityAt: new Date(), name: messageContent}
-                    })
-                });
+                }
             } catch (error) {
                 console.error('Error in chat stream:', error);
-                controller.enqueue(`${JSON.stringify({error: 'Failed to get response from LLM'})}\n`);
+                if (!isStreamClosed) {
+                    controller.enqueue(`${JSON.stringify({error: 'Failed to get response from LLM'})}\n`);
+                }
+            } finally {
+                if (!isStreamClosed) {
+                    isStreamClosed = true;
+                    controller.close();
+                }
             }
-
-            controller.close();
         }
     });
 

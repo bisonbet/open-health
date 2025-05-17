@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import {NextRequest, NextResponse} from "next/server";
 import {ChatRoom} from "@/app/api/chat-rooms/route";
+import {PrismaClientKnownRequestError} from '@prisma/client/runtime/library';
 
 export interface ChatRoomPatchRequest {
     assistantModeId: string
@@ -51,30 +52,38 @@ export async function PATCH(
     const {id} = await params
     const body: ChatRoomPatchRequest = await req.json()
 
-    const chatRoom = await prisma.chatRoom.update({
-        where: {id},
-        data: body,
-        select: {
-            id: true,
-            name: true,
-            assistantMode: {
-                select: {
-                    id: true,
-                    name: true,
-                    description: true,
-                    systemPrompt: true
-                }
-            },
-            llmProviderId: true,
-            llmProviderModelId: true,
-            createdAt: true,
-            lastActivityAt: true
-        }
-    });
+    try {
+        const chatRoom = await prisma.chatRoom.update({
+            where: {id},
+            data: body,
+            select: {
+                id: true,
+                name: true,
+                assistantMode: {
+                    select: {
+                        id: true,
+                        name: true,
+                        description: true,
+                        systemPrompt: true
+                    }
+                },
+                llmProviderId: true,
+                llmProviderModelId: true,
+                createdAt: true,
+                lastActivityAt: true
+            }
+        });
 
-    return NextResponse.json<ChatRoomPatchResponse>({
-        chatRoom
-    })
+        return NextResponse.json<ChatRoomPatchResponse>({
+            chatRoom
+        })
+    } catch (error) {
+        if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
+            // Record not found
+            return NextResponse.json({ error: 'Chat room not found' }, { status: 404 });
+        }
+        throw error;
+    }
 }
 
 export async function DELETE(request: Request, {params}: {

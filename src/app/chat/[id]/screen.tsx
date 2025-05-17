@@ -55,50 +55,90 @@ export default function Screen(
         // Clear input
         setInputText('');
 
-        const oldMessages = [...messages, {
+        const userMessage = {
             id: new Date().toISOString(),
             content: inputText,
             role: 'USER' as ChatRole,
             createdAt: new Date(),
-        }];
+        };
+
+        // Add user message immediately
+        const oldMessages = [...messages, userMessage];
         await mutate({chatMessages: oldMessages}, {revalidate: false});
 
-        const response = await fetch(`/api/chat-rooms/${id}/messages`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                content: inputText,
-                role: 'USER',
-            })
-        });
+        try {
+            const response = await fetch(`/api/chat-rooms/${id}/messages`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    content: inputText,
+                    role: 'USER',
+                })
+            });
 
-        // Read as a stream
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        const createdAt = new Date()
-        if (reader) {
-            let done = false;
-            while (!done) {
-                const {value, done: isDone} = await reader.read();
-                done = isDone;
-                const content = decoder.decode(value, {stream: !done});
-                for (const data of content.split('\n').filter(Boolean)) {
-                    const {content, error}: { content?: string, error?: string } = JSON.parse(data)
-                    if (error) {
-                        console.error('Error from LLM:', error);
-                        continue;
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Read as a stream
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            const assistantMessage = {
+                id: new Date().toISOString(),
+                content: '',
+                role: 'ASSISTANT' as ChatRole,
+                createdAt: new Date(),
+            };
+
+            if (reader) {
+                try {
+                    while (true) {
+                        const {value, done} = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, {stream: true});
+                        const lines = chunk.split('\n').filter(Boolean);
+
+                        for (const line of lines) {
+                            try {
+                                const {content, error}: { content?: string, error?: string } = JSON.parse(line);
+                                if (error) {
+                                    console.error('Error from LLM:', error);
+                                    continue;
+                                }
+                                if (content) {
+                                    assistantMessage.content = content;
+                                    await mutate({
+                                        chatMessages: [...oldMessages, assistantMessage]
+                                    }, {revalidate: false});
+                                }
+                            } catch (e) {
+                                console.error('Error parsing stream chunk:', e);
+                            }
+                        }
                     }
-                    if (content) {
-                        await mutate({
-                            chatMessages: [
-                                ...oldMessages,
-                                {id: new Date().toISOString(), content: content, role: 'ASSISTANT', createdAt}
-                            ]
-                        }, {revalidate: false});
-                    }
+                } catch (e) {
+                    console.error('Error reading stream:', e);
+                    throw e;
+                } finally {
+                    reader.releaseLock();
                 }
             }
+
+            // Final revalidation to ensure we have the latest state
             await mutate();
+        } catch (error) {
+            console.error('Error in chat:', error);
+            // Add error message to chat
+            const errorMessage = {
+                id: new Date().toISOString(),
+                content: 'Sorry, there was an error processing your message. Please try again.',
+                role: 'ASSISTANT' as ChatRole,
+                createdAt: new Date(),
+            };
+            await mutate({
+                chatMessages: [...oldMessages, errorMessage]
+            }, {revalidate: false});
         }
     };
 

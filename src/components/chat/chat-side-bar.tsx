@@ -122,19 +122,29 @@ export default function ChatSideBar({
     const confirmDelete = async () => {
         if (!chatToDelete) return;
 
-        await fetch(`/api/chat-rooms/${chatToDelete}`, {
-            method: 'DELETE'
-        });
+        try {
+            const response = await fetch(`/api/chat-rooms/${chatToDelete}`, {
+                method: 'DELETE'
+            });
 
-        const updatedChatRooms = chatRooms.filter(room => room.id !== chatToDelete);
-        await chatRoomMutate({chatRooms: updatedChatRooms}, false);
+            if (!response.ok) {
+                throw new Error('Failed to delete chat room');
+            }
 
-        if (chatRoomId === chatToDelete) {
-            router.push('/');
+            const updatedChatRooms = chatRooms.filter(room => room.id !== chatToDelete);
+            await chatRoomMutate({chatRooms: updatedChatRooms}, false);
+
+            if (chatRoomId === chatToDelete) {
+                router.push('/');
+            }
+        } catch (error) {
+            console.error('Error deleting chat room:', error);
+            // If deletion failed, refresh the chat rooms list
+            await chatRoomMutate();
+        } finally {
+            setDeleteDialogOpen(false);
+            setChatToDelete(null);
         }
-
-        setDeleteDialogOpen(false);
-        setChatToDelete(null);
     }
 
     return <>
