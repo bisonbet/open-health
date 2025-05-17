@@ -42,7 +42,31 @@ export class OllamaVisionParser extends BaseVisionParser {
             const response = await fetch(`${apiUrl}/api/tags`)
             // Assuming the response is JSON and has a 'models' property
             const data = await response.json() as { models: { name: string, model: string }[] };
-            return data.models.map((m: { name: string, model: string }) => ({id: m.model, name: m.name}))
+            
+            // Filter models that have vision capabilities
+            const visionModels = await Promise.all(
+                data.models.map(async (m) => {
+                    try {
+                        const showResponse = await fetch(`${apiUrl}/api/show`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ model: m.model })
+                        });
+                        const showData = await showResponse.json();
+                        // Check if the model has vision capability
+                        const hasVision = showData.capabilities?.includes('vision');
+                        return hasVision ? {id: m.model, name: m.name} : null;
+                    } catch (e) {
+                        console.error(`Failed to check capabilities for model ${m.model}:`, e);
+                        return null;
+                    }
+                })
+            );
+            
+            // Filter out null values (models without vision capabilities)
+            return visionModels.filter((model): model is VisionParserModel => model !== null);
         } catch (e) {
             console.error(e)
             return []

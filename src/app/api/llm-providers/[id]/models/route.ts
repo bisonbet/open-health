@@ -37,9 +37,29 @@ export async function GET() {
             return NextResponse.json<LLMProviderModelListResponse>({ llmProviderModels: [] }, { status: 500 });
         }
 
-        const models: LLMProviderModel[] = data.models.map(
-            (model: { name: string, model: string }) => ({ id: model.model, name: model.name })
+        // Filter models that don't have embedding capability
+        const nonEmbeddingModels = await Promise.all(
+            data.models.map(async (model: { name: string, model: string }) => {
+                try {
+                    const showResponse = await fetch(`${ollamaApiUrl}/api/show`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ model: model.model })
+                    });
+                    const showData = await showResponse.json();
+                    // Check if the model does NOT have embedding capability
+                    const hasEmbedding = showData.capabilities?.includes('embedding');
+                    return !hasEmbedding ? { id: model.model, name: model.name } : null;
+                } catch (e) {
+                    console.error(`Failed to check capabilities for model ${model.model}:`, e);
+                    return null;
+                }
+            })
         );
+
+        const models: LLMProviderModel[] = nonEmbeddingModels.filter((model): model is LLMProviderModel => model !== null);
 
         return NextResponse.json<LLMProviderModelListResponse>({
             llmProviderModels: models,
