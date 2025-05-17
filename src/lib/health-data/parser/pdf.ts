@@ -45,6 +45,15 @@ interface InferenceOptions {
   documentParser: DocumentParserOptions;
 }
 
+interface TestResult {
+  value: string | null;
+  unit: string | null;
+}
+
+function isTestResult(value: any): value is TestResult {
+  return value && typeof value === 'object' && 'value' in value;
+}
+
 async function documentOCR({
   document,
   documentParser,
@@ -371,7 +380,8 @@ export async function parseHealthData(options: SourceParseOptions) {
     const valueTotal =
       resultDictTotal.hasOwnProperty(key) &&
       resultDictTotal[key] !== null &&
-      resultDictTotal[key]!.value !== null
+      isTestResult(resultDictTotal[key]) &&
+      resultDictTotal[key].value !== null
         ? resultDictTotal[key]
         : null;
     const pageTotal = valueTotal !== null ? resultTotalPages[key] : null;
@@ -379,7 +389,8 @@ export async function parseHealthData(options: SourceParseOptions) {
     const valueText =
       resultDictText.hasOwnProperty(key) &&
       resultDictText[key] !== null &&
-      resultDictText[key]!.value !== null
+      isTestResult(resultDictText[key]) &&
+      resultDictText[key].value !== null
         ? resultDictText[key]
         : null;
     const pageText = valueText !== null ? resultTextPages[key] : null;
@@ -387,7 +398,8 @@ export async function parseHealthData(options: SourceParseOptions) {
     const valueImage =
       resultDictImage.hasOwnProperty(key) &&
       resultDictImage[key] !== null &&
-      resultDictImage[key]!.value !== null
+      isTestResult(resultDictImage[key]) &&
+      resultDictImage[key].value !== null
         ? resultDictImage[key]
         : null;
     const pageImage = valueImage !== null ? resultImagePages[key] : null;

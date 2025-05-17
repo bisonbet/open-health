@@ -141,9 +141,12 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       formData.append("from_formats", "pdf");
       formData.append("from_formats", "docx");
       formData.append("from_formats", "image");
-      formData.append("force_ocr", "false");
+      formData.append("force_ocr", "true");
       formData.append("image_export_mode", "placeholder");
       formData.append("ocr_lang", "en");
+      formData.append("ocr_confidence_threshold", "0.7");  // Adjust confidence threshold
+      formData.append("ocr_dpi", "300");  // Increase DPI for better quality
+      formData.append("ocr_preprocessing", "true");  // Enable image preprocessing
       formData.append("table_mode", "accurate");
       formData.append("files", fileData, fileName);
       formData.append("abort_on_error", "false");
@@ -229,6 +232,9 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       formData.append("force_ocr", "true");
       formData.append("image_export_mode", "placeholder");
       formData.append("ocr_lang", "en");
+      formData.append("ocr_confidence_threshold", "0.7");  // Adjust confidence threshold
+      formData.append("ocr_dpi", "300");  // Increase DPI for better quality
+      formData.append("ocr_preprocessing", "true");  // Enable image preprocessing
       formData.append("table_mode", "accurate");
       formData.append("files", fileData, fileName);
       formData.append("abort_on_error", "false");

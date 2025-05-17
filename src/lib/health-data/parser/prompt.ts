@@ -45,6 +45,20 @@ Step 4: Final JSON Construction
 *   Verify that all values inside \`test_result\` are objects in the required value/unit format.
 *   Remove duplicate tests. If a test appears multiple times, select the single most accurate validated value.
 
+**PDF-Specific Guidelines:**
+1. For tables in PDFs, maintain the row/column structure when extracting values
+2. For values split across lines, combine them correctly (e.g., "12" and "3" on separate lines should be "123")
+3. For values with units in different positions, ensure proper association
+4. For values with reference ranges, extract only the actual result value
+5. For values with asterisks or special markers, include these in the value field
+
+**Value Validation Rules:**
+1. Blood pressure values should be in format "systolic/diastolic"
+2. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
+3. Dates should be in yyyy-mm-dd format
+4. Percentages should be numeric values without the % symbol
+5. Ranges should be split into separate min/max values
+
 **Final Reminder:** Adherence to the specified JSON structure (\`test_result\` key, snake_case inner keys, value/unit objects) is paramount. Double-check your final JSON output before finishing.`
         ],
         ["human", 'This is the parsed text:\n{context}'],
@@ -72,6 +86,13 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 3.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
 4.  Avoid duplicate test keys within \`test_result\`.
 
+**Value Validation Rules:**
+1. Blood pressure values should be in format "systolic/diastolic"
+2. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
+3. Dates should be in yyyy-mm-dd format
+4. Percentages should be numeric values without the % symbol
+5. Ranges should be split into separate min/max values
+
 **Final Check:** Ensure the final JSON strictly follows the format described above: \`test_result\` key, **snake_case** inner keys, and value/unit objects inside.`
         ],
         ["human", 'This is the parsed text:\n{context}']
@@ -97,6 +118,13 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 3.  For multi-component tests (e.g., blood pressure), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
 4.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
 5.  Avoid duplicate test keys within \`test_result\`. If a test appears multiple times, select the clearest reading.
+
+**Value Validation Rules:**
+1. Blood pressure values should be in format "systolic/diastolic"
+2. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
+3. Dates should be in yyyy-mm-dd format
+4. Percentages should be numeric values without the % symbol
+5. Ranges should be split into separate min/max values
 
 **Final Check:** Ensure the final JSON strictly follows the format described: \`test_result\` key, **snake_case** inner keys, and value/unit objects inside.`
         ],

@@ -2507,6 +2507,9 @@ export const HealthCheckupSchema = z.object({
                 })
                 .optional().nullable()
                 .describe("Sedimentation rate (Westergren method)"),
+
+            confidence: z.number().optional().nullable().describe("OCR confidence score"),
+            source: z.enum(['text', 'image', 'both']).optional().nullable().describe("Data source"),
         })
         .describe("Test results"),
 });

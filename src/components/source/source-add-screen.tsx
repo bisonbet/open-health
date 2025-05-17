@@ -54,6 +54,7 @@ interface Field {
     options?: { value: string; label: string }[];
     defaultValue?: string;
     placeholder?: string;
+    showWhen?: (formData: Record<string, any>) => boolean;
 }
 
 interface AddSourceDialogProps {
@@ -180,7 +181,31 @@ const personalInfoFields = (t: any, top: any): Field[] => {
                 {value: 'AB-', label: 'AB-'}
             ]
         },
-        {key: 'familyHistory', label: t('familyHistory'), type: 'textarea'}
+        {key: 'currentMedication', label: t('currentMedication'), type: 'textarea'},
+        {key: 'allergies', label: t('allergies'), type: 'textarea'},
+        {key: 'smokingHistory', label: t('smokingHistory'), type: 'select', options: [
+            {value: 'never', label: 'Never Smoked'},
+            {value: 'former', label: 'Former Smoker'},
+            {value: 'current', label: 'Current Smoker'}
+        ]},
+        {key: 'alcoholHistory', label: t('alcoholHistory'), type: 'select', options: [
+            {value: 'never', label: 'Never Drinks'},
+            {value: 'former', label: 'Former Drinker'},
+            {value: 'current', label: 'Current Drinker'}
+        ]},
+        {
+            key: 'alcoholFrequency',
+            label: t('alcoholFrequency'),
+            type: 'select',
+            options: [
+                {value: 'rarely', label: 'Rarely (Less than 1 drink per day)'},
+                {value: 'occasionally', label: 'Occasionally (1-2 drinks per day)'},
+                {value: 'frequent', label: 'Frequently (3+ drinks per day)'}
+            ],
+            showWhen: (formData: Record<string, any>) => formData.alcoholHistory === 'current'
+        },
+        {key: 'familyHistory', label: t('familyHistory'), type: 'textarea'},
+        {key: 'medicalHistory', label: t('medicalHistory'), type: 'textarea'}
     ]
 };
 
