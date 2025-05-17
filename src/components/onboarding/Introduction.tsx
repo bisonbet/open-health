@@ -8,12 +8,12 @@ export default function Introduction() {
             <div>
                 <div className="mb-4">
                     <h1 className="text-5xl font-bold mb-1">{t('title')}</h1>
-                    <p className="text-xl text-gray-500">{t('subtitle')}</p>
+                    <p className="text-xl text-muted-foreground">{t('subtitle')}</p>
                 </div>
-                <p className="text-xl text-gray-600">{t('description')}</p>
+                <p className="text-xl text-muted-foreground">{t('description')}</p>
             </div>
 
-            <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg space-y-2">
+            <div className="text-sm text-muted-foreground bg-muted p-4 rounded-lg space-y-2">
                 <p>{t('privacyNotice')}</p>
                 <p>
                     {t('runLocally')}{' '}
@@ -21,7 +21,7 @@ export default function Introduction() {
                         href="https://github.com/OpenHealthForAll/open-health"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-gray-800"
+                        className="text-muted-foreground hover:text-foreground"
                     >
                         {t('here')}
                     </a>

@@ -5,6 +5,7 @@ import {Menu, Send, Settings} from 'lucide-react';
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import LogoutButton from "@/components/auth/logout-button";
+import {ThemeToggle} from "@/components/ui/theme-toggle";
 
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import ChatSideBar from "@/components/chat/chat-side-bar";
@@ -103,7 +104,7 @@ export default function Screen(
 
     return (
         <div className="h-screen flex flex-col">
-            <div className="bg-white dark:bg-zinc-900 border-b h-14 flex items-center px-4 shrink-0">
+            <div className="bg-background border-b h-14 flex items-center px-4 shrink-0">
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="default" onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}>
                         <Menu className="w-4 h-4"/>
@@ -114,6 +115,7 @@ export default function Screen(
                 <div className="flex items-center gap-4">
                     <NavLinks/>
                     <div className="flex items-center gap-1">
+                        <ThemeToggle />
                         <LogoutButton/>
                         <Button variant="ghost" size="default"
                                 onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}>
@@ -126,13 +128,13 @@ export default function Screen(
             <div className="flex-1 flex overflow-hidden">
                 {/* Left sidebar */}
                 {isLeftSidebarOpen && (
-                    <div className="w-72 border-r bg-gray-50 flex flex-col overflow-hidden">
+                    <div className="w-72 border-r bg-background flex flex-col overflow-hidden">
                         <ChatSideBar chatRoomId={id} isLeftSidebarOpen={true}/>
                     </div>
                 )}
 
                 {/* Main content */}
-                <div className="flex-1 flex flex-col bg-white min-w-0">
+                <div className="flex-1 flex flex-col bg-background min-w-0">
                     <div className="flex-1 overflow-y-auto p-2 space-y-2">
                         {messages.map((message, index) => (
                             <ChatMessage key={index} message={message}/>
@@ -161,7 +163,7 @@ export default function Screen(
                                 </Button>
                             </div>
                         </div>
-                        <div className="border-t p-4 z-10 md:static fixed bottom-0 left-0 w-full bg-white">
+                        <div className="border-t p-4 z-10 md:static fixed bottom-0 left-0 w-full bg-background">
                             <div className="flex gap-2">
                                 <Input
                                     placeholder={t('inputPlaceholder')}
@@ -184,7 +186,7 @@ export default function Screen(
 
                 {/* Right sidebar */}
                 {isRightSidebarOpen && (
-                    <div className="w-80 border-l bg-gray-50 flex flex-col overflow-y-auto">
+                    <div className="w-80 border-l bg-background flex flex-col overflow-y-auto">
                         <ChatSettingSideBar chatRoomId={id}/>
                     </div>
                 )}

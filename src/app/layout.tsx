@@ -7,6 +7,7 @@ import NextAuthProvider from "@/context/next-auth";
 import AmplitudeContextProvider from "@/context/amplitude";
 import {getLocale, getMessages} from 'next-intl/server';
 import {NextIntlClientProvider} from 'next-intl';
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -31,16 +32,23 @@ export default async function RootLayout({children, modal}: Readonly<{
     const messages = await getMessages();
 
     return (
-        <html lang={locale}>
+        <html lang={locale} suppressHydrationWarning>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <NextIntlClientProvider messages={messages}>
-            <NextAuthProvider>
-                <AmplitudeContextProvider>
-                    {children}
-                    {modal}
-                </AmplitudeContextProvider>
-            </NextAuthProvider>
-        </NextIntlClientProvider>
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
+            <NextIntlClientProvider messages={messages}>
+                <NextAuthProvider>
+                    <AmplitudeContextProvider>
+                        {children}
+                        {modal}
+                    </AmplitudeContextProvider>
+                </NextAuthProvider>
+            </NextIntlClientProvider>
+        </ThemeProvider>
         </body>
         </html>
     );

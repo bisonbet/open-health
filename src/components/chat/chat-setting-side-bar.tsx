@@ -9,7 +9,6 @@ import {ChatRoomGetResponse} from "@/app/api/chat-rooms/[id]/route";
 import {AssistantModePatchRequest} from "@/app/api/assistant-modes/[id]/route";
 import {LLMProvider, LLMProviderListResponse} from "@/app/api/llm-providers/route";
 import {LLMProviderModel, LLMProviderModelListResponse} from "@/app/api/llm-providers/[id]/models/route";
-import {cn} from "@/lib/utils";
 import {useTranslations} from "next-intl";
 import Link from "next/link";
 import {Plus} from "lucide-react";
@@ -161,7 +160,7 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
                         <SelectTrigger>
                             <SelectValue placeholder={t('selectCompany')}/>
                         </SelectTrigger>
-                        <SelectContent className={cn('bg-white')}>
+                        <SelectContent className="bg-background border border-border">
                             {llmProvidersData?.llmProviders.map((provider) => <SelectItem
                                 key={provider.id}
                                 value={provider.id}>{provider.name}</SelectItem>)}
@@ -172,7 +171,7 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
                         <SelectTrigger>
                             <SelectValue placeholder={t('selectModel')}/>
                         </SelectTrigger>
-                        <SelectContent className={cn('bg-white')}>
+                        <SelectContent className="bg-background border border-border">
                             {llmProviderModels.map((model) => (
                                 <SelectItem key={model.id} value={model.id}>
                                     {model.name}
@@ -180,12 +179,12 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
                             ))}
 
                             {llmProviderModels.length === 0 && (
-                                <div className="p-2 text-sm text-gray-500">{t('noModelsFound')}</div>
+                                <div className="p-2 text-sm text-muted-foreground">{t('noModelsFound')}</div>
                             )}
                         </SelectContent>
                     </Select>
 
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                         Using Ollama API endpoint: {process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://ollama:11434'}
                     </div>
                 </div>
@@ -210,7 +209,7 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
                 <div className="flex items-center justify-between">
                     <h4 className="text-sm font-medium">{t('assistantMode')}</h4>
                     <Link href="/assistant-modes/add"
-                          className="inline-flex items-center text-xs text-blue-600 hover:text-blue-800">
+                          className="inline-flex items-center text-xs text-primary hover:text-primary/80">
                         <Plus className="mr-1 h-3 w-3"/>
                         {t('addAssistant')}
                     </Link>
@@ -220,14 +219,14 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
                         <button
                             key={assistantMode.id}
                             className={`w-full p-3 rounded-lg text-left border transition-colors
-                        ${selectedAssistantMode?.id === assistantMode.id ? 'bg-white border-gray-300' :
-                                'border-transparent hover:bg-gray-100'}`}
+                        ${selectedAssistantMode?.id === assistantMode.id ? 'bg-accent border-border' :
+                                'border-transparent hover:bg-accent'}`}
                             onClick={async () => {
                                 await onChangeChatRoom({assistantModeId: assistantMode.id});
                             }}
                         >
                             <div className="text-sm font-medium">{assistantMode.name}</div>
-                            <div className="text-xs text-gray-500">{assistantMode.description}</div>
+                            <div className="text-xs text-muted-foreground">{assistantMode.description}</div>
                         </button>
                     ))}
                 </div>

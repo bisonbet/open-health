@@ -215,6 +215,62 @@ const symptomsFields = (t: any): Field[] => [
     {key: 'description', label: t('description'), type: 'textarea'}
 ];
 
+const selectStyles = {
+    menu: (base: any) => ({
+        ...base,
+        backgroundColor: 'hsl(var(--popover))',
+        border: '1px solid hsl(var(--border))',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        zIndex: 9999,
+    }),
+    option: (base: any, state: any) => ({
+        ...base,
+        backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'hsl(var(--popover))',
+        color: 'hsl(var(--foreground))',
+        cursor: 'pointer',
+        ':active': {
+            backgroundColor: 'hsl(var(--accent))',
+        },
+    }),
+    singleValue: (base: any) => ({
+        ...base,
+        color: 'hsl(var(--foreground))',
+    }),
+    control: (base: any) => ({
+        ...base,
+        backgroundColor: 'hsl(var(--background))',
+        borderColor: 'hsl(var(--border))',
+        '&:hover': {
+            borderColor: 'hsl(var(--ring))',
+        },
+    }),
+    menuList: (base: any) => ({
+        ...base,
+        backgroundColor: 'hsl(var(--popover))',
+        color: 'hsl(var(--foreground))',
+    }),
+    input: (base: any) => ({
+        ...base,
+        color: 'hsl(var(--foreground))',
+    }),
+    placeholder: (base: any) => ({
+        ...base,
+        color: 'hsl(var(--muted-foreground))',
+    }),
+    dropdownIndicator: (base: any) => ({
+        ...base,
+        color: 'hsl(var(--muted-foreground))',
+    }),
+    clearIndicator: (base: any) => ({
+        ...base,
+        color: 'hsl(var(--muted-foreground))',
+    }),
+    indicatorSeparator: (base: any) => ({
+        ...base,
+        backgroundColor: 'hsl(var(--border))',
+    }),
+};
+
 const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                                                              isSetUpVisionParser,
                                                              isSetUpDocumentParser,
@@ -281,13 +337,13 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                             )}
                         >
                             {uploadStatus === 'uploading' ? (
-                                <Loader2 className="h-6 w-6 text-gray-500 animate-spin"/>
+                                <Loader2 className="h-6 w-6 text-muted-foreground animate-spin"/>
                             ) : (
-                                <FileText className="w-6 h-6 text-gray-500"/>
+                                <FileText className="w-6 h-6 text-muted-foreground"/>
                             )}
                             <div className="flex-1">
                                 <h3 className="font-medium">{t('uploadFiles')}</h3>
-                                <p className="text-sm text-gray-500">{t('uploadFilesDescription')}</p>
+                                <p className="text-sm text-muted-foreground">{t('uploadFilesDescription')}</p>
                             </div>
                         </label>
                         <input
@@ -304,10 +360,10 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                             className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 w-full"
                             onClick={handleAddSymptoms}
                         >
-                            <Activity className="w-6 h-6 text-gray-500"/>
+                            <Activity className="w-6 h-6 text-muted-foreground"/>
                             <div className="flex-1 text-left">
                                 <h3 className="font-medium">{t('uploadSymptoms')}</h3>
-                                <p className="text-sm text-gray-500">{t('uploadSymptomsDescription')}</p>
+                                <p className="text-sm text-muted-foreground">{t('uploadSymptomsDescription')}</p>
                             </div>
                         </button>
 
@@ -315,10 +371,10 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                             className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 w-full"
                             onClick={onImportExternalHealth}
                         >
-                            <Database className="w-6 h-6 text-gray-500"/>
+                            <Database className="w-6 h-6 text-muted-foreground"/>
                             <div className="flex-1 text-left">
                                 <h3 className="font-medium">{t('importExternalHealth')}</h3>
-                                <p className="text-sm text-gray-500">{t('importExternalHealthDescription')}</p>
+                                <p className="text-sm text-muted-foreground">{t('importExternalHealthDescription')}</p>
                             </div>
                         </button>
                     </div>
@@ -393,7 +449,7 @@ const HealthDataItem: React.FC<HealthDataItemProps> = ({healthData, isSelected, 
             className={`flex items-center justify-between p-2 rounded cursor-pointer transition-all
 ${isSelected
                 ? 'text-primary text-base font-semibold bg-primary/5'
-                : 'text-sm hover:bg-gray-50'}`}
+                : 'text-sm hover:bg-accent hover:text-accent-foreground'}`}
             onClick={onClick}
         >
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -661,7 +717,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
         <>
             <div className="flex flex-col gap-4 h-full">
                 <div className="h-[40%] min-h-[300px]">
-                    <div className="bg-white h-full overflow-y-auto rounded-lg border">
+                    <div className="bg-background h-full overflow-y-auto rounded-lg border">
                         {(healthData?.type === HealthDataType.PERSONAL_INFO.id || healthData?.type === HealthDataType.SYMPTOMS.id) ? (
                             <div className="p-4">
                                 <DynamicForm
@@ -684,7 +740,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                     />
                                 </div>
                             ) : (
-                                <div className="bg-gray-50 p-4 rounded-lg relative flex flex-row h-full">
+                                <div className="bg-background p-4 rounded-lg relative flex flex-row h-full">
                                     <div id="pdf" className="w-[60%] overflow-y-auto h-full">
                                         <Document file={healthData.filePath}
                                                   className="w-full"
@@ -705,7 +761,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                             })}
                                         </Document>
                                         <div
-                                            className="relative w-fit bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 bg-white p-2 rounded shadow">
+                                            className="relative w-fit bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 bg-background p-2 rounded shadow">
                                             <button
                                                 className="px-4 py-2 bg-gray-300 rounded"
                                                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
@@ -796,7 +852,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                         {healthData &&
                                             <div className="mt-4 w-full">
                                                 <button
-                                                    className="w-full py-2 bg-blue-500 text-white rounded"
+                                                    className="w-full py-2 bg-primary text-primary-foreground rounded"
                                                     onClick={() => {
                                                         setShowAddFieldName(undefined);
                                                         setShowAddFieldModal(true);
@@ -814,7 +870,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                 </div>
 
                 <div className="flex-1">
-                    <div className="bg-white rounded-lg border h-full flex flex-col gap-4">
+                    <div className="bg-background rounded-lg border h-full flex flex-col gap-4">
                         <div className="flex-1 min-h-0 p-4">
                             <JSONEditor
                                 data={formData}
@@ -827,7 +883,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                 <div className="p-4">
                                     <h3 className="text-sm font-medium mb-2">Processing Log</h3>
                                     <div
-                                        className="h-[160px] bg-gray-50 p-3 rounded-lg text-sm font-mono overflow-y-auto">
+                                        className="h-[160px] bg-background p-3 rounded-lg text-sm font-mono overflow-y-auto">
                                         {(formData.parsingLogs as string[]).map((log, index) => (
                                             <div key={index} className="mb-1">
                                                 {log}
@@ -843,12 +899,12 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
             {showAddFieldModal && <div
                 className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-50 flex justify-center items-center">
                 {/* Input modal for adding, searchable dropdown to select a field, with confirm and cancel buttons */}
-                <div className="bg-white p-4 rounded-lg flex flex-col w-[50vw]">
+                <div className="bg-background p-4 rounded-lg flex flex-col w-[50vw]">
                     <p className="mb-4 font-bold">
                         Please select a field to add
                     </p>
                     <Select
-                        className="basic-single"
+                        className="basic-single text-sm"
                         classNamePrefix="select"
                         isDisabled={false}
                         isLoading={false}
@@ -879,9 +935,9 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                     <div className="flex flex-row gap-2 mt-4">
                         <p className={
                             cn(
-                                'bg-blue-500 text-white py-2 px-4 rounded',
-                                'hover:bg-blue-600',
-                                'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50',
+                                'bg-primary text-primary-foreground py-2 px-4 rounded',
+                                'hover:bg-primary/90',
+                                'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50',
                             )
                         }
                            onClick={() => {
@@ -1339,6 +1395,28 @@ export default function SourceAddScreen() {
                                                         value: vision.name,
                                                         label: vision.name
                                                     }))}
+                                                    styles={selectStyles}
+                                                    theme={(theme) => ({
+                                                        ...theme,
+                                                        colors: {
+                                                            ...theme.colors,
+                                                            primary: 'var(--primary)',
+                                                            primary75: 'var(--primary)',
+                                                            primary50: 'var(--primary)',
+                                                            primary25: 'var(--primary)',
+                                                            neutral0: 'var(--popover)',
+                                                            neutral5: 'var(--border)',
+                                                            neutral10: 'var(--border)',
+                                                            neutral20: 'var(--border)',
+                                                            neutral30: 'var(--border)',
+                                                            neutral40: 'var(--muted-foreground)',
+                                                            neutral50: 'var(--muted-foreground)',
+                                                            neutral60: 'var(--foreground)',
+                                                            neutral70: 'var(--foreground)',
+                                                            neutral80: 'var(--foreground)',
+                                                            neutral90: 'var(--foreground)',
+                                                        },
+                                                    })}
                                                 />
 
                                                 <Select
@@ -1352,9 +1430,10 @@ export default function SourceAddScreen() {
                                                         value: model.id,
                                                         label: model.name
                                                     }))}
+                                                    styles={selectStyles}
                                                 />
 
-                                                <div className="text-sm text-gray-500">
+                                                <div className="text-sm text-muted-foreground">
                                                     Using Ollama API endpoint: {process.env.NEXT_PUBLIC_OLLAMA_URL || 'http://ollama:11434'}
                                                 </div>
                                             </div>
@@ -1385,6 +1464,7 @@ export default function SourceAddScreen() {
                                                         value: document.name,
                                                         label: document.name
                                                     }))}
+                                                    styles={selectStyles}
                                                 />
 
                                                 <Select
@@ -1400,6 +1480,7 @@ export default function SourceAddScreen() {
                                                         value: model.id,
                                                         label: model.name
                                                     }))}
+                                                    styles={selectStyles}
                                                 />
                                             </div>
                                         </div>

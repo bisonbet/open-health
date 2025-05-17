@@ -14,7 +14,7 @@ interface ChatMessageProps {
 export default function ChatMessage(
     {message}: ChatMessageProps
 ) {
-    return <div className={`flex gap-2 ${message.role === 'ASSISTANT' ? 'bg-gray-50' : ''} p-2 rounded`}>
+    return <div className={`flex gap-2 ${message.role === 'ASSISTANT' ? 'bg-muted dark:bg-muted/50' : ''} p-2 rounded`}>
         {message.role === 'ASSISTANT' && (
             <div className="shrink-0 mt-1">
                 <Image
@@ -29,7 +29,7 @@ export default function ChatMessage(
         <div className={`flex-1 ${message.role === 'USER' ? 'text-right' : ''}`}>
             <Markdown className={cn(
                 'text-sm',
-                message.role === 'USER' ? undefined : 'prose'
+                message.role === 'USER' ? undefined : 'prose dark:prose-invert'
             )}
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex]}

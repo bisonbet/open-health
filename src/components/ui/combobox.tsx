@@ -79,17 +79,17 @@ export function Combobox({
             />
             {open && (
                 <div
-                    className="absolute top-full left-0 w-full z-50 bg-white border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+                    className="absolute top-full left-0 w-full z-50 bg-popover border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
                     <div className="p-2">
                         {filteredOptions.length === 0 ? (
-                            <div className="text-center py-2 text-gray-500">{emptyMessage}</div>
+                            <div className="text-center py-2 text-muted-foreground">{emptyMessage}</div>
                         ) : (
                             filteredOptions.map((option) => (
                                 <div
                                     key={option.value}
                                     className={cn(
-                                        "px-2 py-1 cursor-pointer rounded hover:bg-gray-100",
-                                        value === option.value && "bg-gray-100"
+                                        "px-2 py-1 cursor-pointer rounded hover:bg-accent",
+                                        value === option.value && "bg-accent"
                                     )}
                                     onClick={() => handleSelect(option.value)}
                                 >

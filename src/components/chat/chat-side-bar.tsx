@@ -139,14 +139,14 @@ export default function ChatSideBar({
 
     return <>
         <div className="h-full flex flex-col overflow-hidden">
-            <div className="border-b bg-white">
+            <div className="border-b bg-background">
                 <div className="p-4 space-y-3">
                     {healthDataList.length > 0 ? (
                         <>
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                     <h3 className="text-sm font-medium tracking-tight">{t('sources')}</h3>
-                                    <div className="flex gap-3 text-xs text-gray-500">
+                                    <div className="flex gap-3 text-xs text-muted-foreground">
                                         <span>{t('numberOfFiles', {value: healthDataList.length})}</span>
                                         <span>{t('countOfTokens', {value: totalTokens.toLocaleString()})}</span>
                                     </div>
@@ -156,7 +156,7 @@ export default function ChatSideBar({
                                         <TooltipTrigger asChild>
                                             <Button size="sm" variant="ghost"
                                                     onClick={() => setJsonViewerOpen(true)}
-                                                    className="h-7 hover:bg-gray-100">
+                                                    className="h-7 hover:bg-accent">
                                                 <FileText className="w-3 h-3"/>
                                             </Button>
                                         </TooltipTrigger>
@@ -202,19 +202,19 @@ export default function ChatSideBar({
                     {chatRooms?.map((chatRoom) => (
                         <Link
                             key={chatRoom.id}
-                            className={`group block w-full text-left p-2.5 rounded-md text-sm hover:bg-gray-100 transition-colors relative
-                                ${chatRoomId === chatRoom.id ? 'bg-gray-100' : ''}`}
+                            className={`group block w-full text-left p-2.5 rounded-md text-sm hover:bg-accent transition-colors relative
+                                ${chatRoomId === chatRoom.id ? 'bg-accent' : ''}`}
                             href={`/chat/${chatRoom.id}`}
                         >
                             <div className="pr-12 font-medium truncate">{chatRoom.name}</div>
                             <div
-                                className="pr-12 text-xs text-gray-500 mt-0.5">{dayjs(chatRoom.lastActivityAt).format('L LT')}</div>
+                                className="pr-12 text-xs text-muted-foreground mt-0.5">{dayjs(chatRoom.lastActivityAt).format('L LT')}</div>
                             <Button
                                 variant="ghost"
                                 className="absolute right-1 top-1/2 -translate-y-1/2"
                                 onClick={(e) => handleDeleteChat(chatRoom.id, e)}
                             >
-                                <Trash2 className="h-4 w-4 text-gray-500 hover:text-red-500"/>
+                                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive"/>
                             </Button>
                         </Link>
                     ))}
@@ -274,7 +274,7 @@ export default function ChatSideBar({
                 </DialogHeader>
                 <div className="space-y-1.5 py-3">
                     <p className="text-sm">{t('chatDeleteMessage')}</p>
-                    <p className="text-xs text-gray-500">{t('chatDeleteMessageDetail')}</p>
+                    <p className="text-xs text-muted-foreground">{t('chatDeleteMessageDetail')}</p>
                 </div>
                 <DialogFooter className="gap-2 sm:gap-0">
                     <Button
@@ -285,9 +285,9 @@ export default function ChatSideBar({
                         {t('cancel')}
                     </Button>
                     <Button
-                        variant="outline"
+                        variant="destructive"
                         onClick={confirmDelete}
-                        className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-900"
+                        className="text-sm"
                     >
                         {t('delete')}
                     </Button>

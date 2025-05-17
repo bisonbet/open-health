@@ -28,7 +28,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>((
     ref) => {
     return (
         <div className="mb-4 relative">
-            <span className="block text-sm font-medium text-gray-700">
+            <span className="block text-sm font-medium text-foreground">
                 {name}
             </span>
             <input
@@ -43,7 +43,7 @@ const TextInput = forwardRef<HTMLInputElement, TextInputProps>((
                 ref={ref}
                 className="outline-none border-2 border-gray-300 focus:border-indigo-500 block w-full text-lg sm:text-lg rounded-md mb-2 p-2 pr-10"
             />
-            <label htmlFor={name} className="block text-xs font-medium text-gray-500 mb-1">
+            <label htmlFor={name} className="block text-xs font-medium text-muted-foreground mb-1">
                 {label}
             </label>
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-2">
