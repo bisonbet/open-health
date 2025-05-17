@@ -2,6 +2,8 @@ import prisma, {Prisma} from "@/lib/prisma";
 import {NextResponse} from "next/server";
 import {auth} from "@/auth";
 
+export const runtime = 'nodejs';
+
 export interface ChatRoom extends Prisma.ChatRoomGetPayload<{
     select: {
         id: true,

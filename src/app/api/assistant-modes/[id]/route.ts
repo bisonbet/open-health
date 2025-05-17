@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import {AssistantMode} from "@/app/api/assistant-modes/route";
 import {auth} from "@/auth";
 
+export const runtime = 'nodejs';
+
 export interface AssistantModePatchRequest {
     systemPrompt?: string
 }

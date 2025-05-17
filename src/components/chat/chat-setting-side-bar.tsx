@@ -12,6 +12,7 @@ import {LLMProviderModel, LLMProviderModelListResponse} from "@/app/api/llm-prov
 import {useTranslations} from "next-intl";
 import Link from "next/link";
 import {Plus} from "lucide-react";
+import {CHAT_MODEL_PREFERENCES, getFirstAvailableModel} from "@/config/model-preferences";
 
 interface ChatSettingSideBarProps {
     chatRoomId: string;
@@ -102,7 +103,20 @@ export default function ChatSettingSideBar({chatRoomId}: ChatSettingSideBarProps
         }
 
         if (selectedLLMProviderModel === undefined && models.length > 0) {
-            setSelectedLLMProviderModel(models.find((model) => model.id === chatRoom.llmProviderModelId) || models[0]);
+            // Try to find the model from preferences first
+            const initializeModel = async () => {
+                const preferredModel = await getFirstAvailableModel(CHAT_MODEL_PREFERENCES);
+                if (preferredModel) {
+                    const model = models.find((m) => m.id === preferredModel.id);
+                    if (model) {
+                        setSelectedLLMProviderModel(model);
+                        return;
+                    }
+                }
+                // Fallback to saved model or first available
+                setSelectedLLMProviderModel(models.find((model) => model.id === chatRoom.llmProviderModelId) || models[0]);
+            };
+            initializeModel();
         }
     }, [chatRoomData, llmProvidersData, llmProviderModels, selectedLLMProvider, selectedLLMProviderModel]);
 

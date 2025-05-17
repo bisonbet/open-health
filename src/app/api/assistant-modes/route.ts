@@ -2,6 +2,8 @@ import {NextRequest, NextResponse} from "next/server";
 import prisma, {Prisma} from "@/lib/prisma";
 import {auth} from "@/auth";
 
+export const runtime = 'nodejs';
+
 export interface AssistantMode extends Prisma.AssistantModeGetPayload<{
     select: { id: true, name: true, description: true, systemPrompt: true }
 }> {

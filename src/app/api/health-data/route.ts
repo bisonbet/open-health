@@ -9,6 +9,8 @@ import {put} from "@vercel/blob";
 import {currentDeploymentEnv} from "@/lib/current-deployment-env";
 import fs from 'fs'
 
+export const runtime = 'nodejs';
+
 export interface HealthData extends Prisma.HealthDataGetPayload<{
     select: {
         id: true,

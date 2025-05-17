@@ -13,6 +13,7 @@ import ChatMessage from "@/components/chat/chat-message";
 import useSWR from "swr";
 import {useParams} from "next/navigation";
 import {ChatMessageListResponse} from "@/app/api/chat-rooms/[id]/messages/route";
+import {ChatRoomListResponse} from "@/app/api/chat-rooms/route";
 import {ChatRole} from "@prisma/client";
 import ChatSettingSideBar from "@/components/chat/chat-setting-side-bar";
 import {useTranslations} from "next-intl";
@@ -36,12 +37,19 @@ export default function Screen(
     const [isJsonViewerOpen, setIsJsonViewerOpen] = useState(false);
     const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(!isMobile);
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(!isMobile);
+    const [isAssistantResponding, setIsAssistantResponding] = useState(false);
 
     const {data, mutate} = useSWR<ChatMessageListResponse>(`/api/chat-rooms/${id}/messages`, async (url: string) => {
         const response = await fetch(url);
         return response.json();
     });
     const messages = useMemo(() => data?.chatMessages || [], [data]);
+
+    // Add SWR for chat rooms to handle title updates
+    const {mutate: mutateChatRooms} = useSWR<ChatRoomListResponse>('/api/chat-rooms', async (url: string) => {
+        const response = await fetch(url);
+        return response.json();
+    });
 
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -66,6 +74,16 @@ export default function Screen(
         const oldMessages = [...messages, userMessage];
         await mutate({chatMessages: oldMessages}, {revalidate: false});
 
+        // Set loading state and add empty assistant message
+        setIsAssistantResponding(true);
+        const assistantMessage = {
+            id: new Date().toISOString(),
+            content: '',
+            role: 'ASSISTANT' as ChatRole,
+            createdAt: new Date(),
+        };
+        await mutate({chatMessages: [...oldMessages, assistantMessage]}, {revalidate: false});
+
         try {
             const response = await fetch(`/api/chat-rooms/${id}/messages`, {
                 method: 'POST',
@@ -83,12 +101,6 @@ export default function Screen(
             // Read as a stream
             const reader = response.body?.getReader();
             const decoder = new TextDecoder();
-            const assistantMessage = {
-                id: new Date().toISOString(),
-                content: '',
-                role: 'ASSISTANT' as ChatRole,
-                createdAt: new Date(),
-            };
 
             if (reader) {
                 try {
@@ -101,16 +113,20 @@ export default function Screen(
 
                         for (const line of lines) {
                             try {
-                                const {content, error}: { content?: string, error?: string } = JSON.parse(line);
-                                if (error) {
-                                    console.error('Error from LLM:', error);
+                                const data = JSON.parse(line);
+                                if (data.error) {
+                                    console.error('Error from LLM:', data.error);
                                     continue;
                                 }
-                                if (content) {
-                                    assistantMessage.content = content;
+                                if (data.content) {
+                                    assistantMessage.content = data.content;
                                     await mutate({
                                         chatMessages: [...oldMessages, assistantMessage]
                                     }, {revalidate: false});
+                                }
+                                if (data.type === 'title-update') {
+                                    // Trigger a revalidation of the chat rooms list to update the title
+                                    await mutateChatRooms();
                                 }
                             } catch (e) {
                                 console.error('Error parsing stream chunk:', e);
@@ -139,6 +155,8 @@ export default function Screen(
             await mutate({
                 chatMessages: [...oldMessages, errorMessage]
             }, {revalidate: false});
+        } finally {
+            setIsAssistantResponding(false);
         }
     };
 
@@ -177,7 +195,11 @@ export default function Screen(
                 <div className="flex-1 flex flex-col bg-background min-w-0">
                     <div className="flex-1 overflow-y-auto p-2 space-y-2">
                         {messages.map((message, index) => (
-                            <ChatMessage key={index} message={message}/>
+                            <ChatMessage 
+                                key={message.id} 
+                                message={message}
+                                isLoading={isAssistantResponding && index === messages.length - 1 && message.role === 'ASSISTANT' && !message.content}
+                            />
                         ))}
                         <div ref={messagesEndRef}/>
                     </div>

@@ -2,6 +2,8 @@ import {NextRequest, NextResponse} from "next/server";
 import prisma, {Prisma} from "@/lib/prisma";
 import {auth} from "@/auth";
 
+export const runtime = 'nodejs';
+
 export interface ChatMessage extends Prisma.ChatMessageGetPayload<{
     select: {
         id: true,
@@ -28,6 +30,12 @@ export interface ChatMessageCreateRequest {
     }
 }
 
+interface LLMProvider {
+    id: string;
+    providerId: string;
+    apiURL: string;
+}
+
 export async function GET(
     req: NextRequest,
     {params}: { params: Promise<{ id: string }> }
@@ -39,6 +47,84 @@ export async function GET(
     });
 
     return NextResponse.json<ChatMessageListResponse>({chatMessages})
+}
+
+async function generateChatTitle(messages: { role: string; content: string }[], llmProvider: LLMProvider, modelId: string) {
+    // Only generate title if this is the first exchange
+    if (messages.length !== 3) return null; // system prompt + health data + first user message
+
+    const titlePrompt = `You are a title generator. Your task is to create a concise title for a chat conversation based on the user's first message.
+
+IMPORTANT RULES:
+1. Generate ONLY the title, nothing else
+2. Do not include any thinking process or explanations
+3. Do not use markdown or any special formatting
+4. Do not include any tags or brackets
+5. Title must be 20-30 characters long
+6. Title should be a concise summary, not a question
+7. Focus on the main topic or concern
+8. Use clear, simple language
+
+User's message: ${messages[2].content}
+
+Generate the title now:`;
+
+    try {
+        const ollamaApiUrl = process.env.NEXT_PUBLIC_OLLAMA_URL || "http://ollama:11434";
+        
+        const response = await fetch(`${ollamaApiUrl}/api/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: modelId,
+                messages: [{
+                    role: "user",
+                    content: titlePrompt
+                }],
+                stream: false,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Ollama API error:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorText,
+                model: modelId
+            });
+            throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.message?.content) {
+            console.error('Invalid response format:', data);
+            throw new Error('Invalid response format from Ollama API');
+        }
+
+        // Clean up the response to get only the title
+        let title = data.message.content.trim();
+        
+        // Remove any thinking process or tags
+        title = title.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+        title = title.replace(/^["']|["']$/g, '').trim(); // Remove quotes if present
+        
+        // Take only the first line if multiple lines
+        title = title.split('\n')[0].trim();
+        
+        if (!title) {
+            console.error('Empty title generated');
+            throw new Error('Empty title generated');
+        }
+
+        return title;
+    } catch (error) {
+        console.error('Error generating chat title:', error);
+        return null;
+    }
 }
 
 export async function POST(
@@ -84,6 +170,8 @@ export async function POST(
             assistantMode,
             healthDataList
         }
+    }, {
+        timeout: 30000 // Increase timeout to 30 seconds
     })
 
     const messages = [
@@ -147,18 +235,34 @@ export async function POST(
 
                 // Save to prisma after the stream is done
                 if (!isStreamClosed) {
-                    await prisma.$transaction(async (prisma) => {
-                        await prisma.chatMessage.create({
-                            data: {
-                                content: messageContent,
-                                role: 'ASSISTANT',
-                                chatRoomId: id
-                            }
-                        });
-                        await prisma.chatRoom.update({
-                            where: {id}, data: {lastActivityAt: new Date(), name: messageContent}
-                        })
+                    // First create the message
+                    await prisma.chatMessage.create({
+                        data: {
+                            content: messageContent,
+                            role: 'ASSISTANT',
+                            chatRoomId: id
+                        }
                     });
+
+                    // Then handle title generation and update separately
+                    if (!chatRoom.llmProviderModelId) {
+                        console.error('No model ID found for chat room');
+                        return null;
+                    }
+                    
+                    const title = await generateChatTitle(messages, chatRoom.llmProvider, chatRoom.llmProviderModelId);
+                    
+                    // Update chat room with new title
+                    await prisma.chatRoom.update({
+                        where: {id}, 
+                        data: {
+                            lastActivityAt: new Date(),
+                            name: title || messageContent.substring(0, 50) // Fallback to first 50 chars if title generation fails
+                        }
+                    });
+
+                    // Send a message to trigger revalidation
+                    controller.enqueue(`${JSON.stringify({type: 'title-update', title: title || messageContent.substring(0, 50)})}\n`);
                 }
             } catch (error) {
                 console.error('Error in chat stream:', error);

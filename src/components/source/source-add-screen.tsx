@@ -25,6 +25,7 @@ import {HealthDataParserVisionModelListResponse} from "@/app/api/health-data-par
 import {HealthDataParserDocumentModelListResponse} from "@/app/api/health-data-parser/documents/[id]/models/route";
 import {useTranslations} from "next-intl";
 import {countries} from "@/lib/countries";
+import {VISION_MODEL_PREFERENCES, getFirstAvailableModel} from "@/config/model-preferences";
 
 const Select = dynamic(() => import('react-select'), {ssr: false});
 
@@ -600,7 +601,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
 
                 return getNearestBoundingBox(aFocusedWords[0].boundingBox, bFocusedWords[0].boundingBox);
             })
-    }, [getFocusedWords, page, currentPageTestResults, healthData, dataPerPage, userBloodTestResults?.test_result])
+    }, [getFocusedWords, page, currentPageTestResults, userBloodTestResults?.test_result])
 
     const getFields = (): Field[] => {
         switch (healthData.type) {
@@ -1279,11 +1280,27 @@ export default function SourceAddScreen() {
     }, [visionDataList, visionParser]);
 
     useEffect(() => {
-        if (visionModelDataList?.models && visionModelDataList.models.length > 0 && visionParserModel === undefined) {
-            const {name} = visionModelDataList.models[0];
-            setVisionParserModel({value: name, label: name})
+        if (visionModelDataList?.models && visionModelDataList.models.length > 0 && !visionParserModel) {
+            const initializeModel = async () => {
+                const preferredModel = await getFirstAvailableModel(VISION_MODEL_PREFERENCES);
+                if (preferredModel && visionModelDataList?.models) {
+                    const model = visionModelDataList.models.find((m) => m.id === preferredModel.id);
+                    if (model) {
+                        setVisionParserModel({ value: model.id, label: model.name });
+                        return;
+                    }
+                }
+                // Fallback to first available model
+                if (visionModelDataList?.models?.[0]) {
+                    setVisionParserModel({
+                        value: visionModelDataList.models[0].id,
+                        label: visionModelDataList.models[0].name
+                    });
+                }
+            };
+            initializeModel();
         }
-    }, [visionModelDataList, visionParser, visionParserModel]);
+    }, [visionModelDataList, visionParserModel]);
 
     useEffect(() => {
         if (documentDataList?.documents && documentParser === undefined) {
@@ -1294,9 +1311,25 @@ export default function SourceAddScreen() {
     }, [documentDataList, documentParser]);
 
     useEffect(() => {
-        if (documentModelDataList?.models && documentParserModel === undefined) {
-            const {id, name} = documentModelDataList.models[0];
-            setDocumentParserModel({value: id, label: name})
+        if (documentModelDataList?.models && documentModelDataList.models.length > 0 && !documentParserModel) {
+            const initializeModel = async () => {
+                const preferredModel = await getFirstAvailableModel(VISION_MODEL_PREFERENCES);
+                if (preferredModel && documentModelDataList?.models) {
+                    const model = documentModelDataList.models.find((m) => m.id === preferredModel.id);
+                    if (model) {
+                        setDocumentParserModel({ value: model.id, label: model.name });
+                        return;
+                    }
+                }
+                // Fallback to first available model
+                if (documentModelDataList?.models?.[0]) {
+                    setDocumentParserModel({
+                        value: documentModelDataList.models[0].id,
+                        label: documentModelDataList.models[0].name
+                    });
+                }
+            };
+            initializeModel();
         }
     }, [documentModelDataList, documentParserModel]);
 

@@ -3,6 +3,8 @@ import {NextResponse} from "next/server";
 import {auth} from "@/auth";
 import {decrypt} from "@/lib/encryption";
 
+export const runtime = 'nodejs';
+
 export interface LLMProvider extends Prisma.LLMProviderGetPayload<{
     select: {
         id: true,
