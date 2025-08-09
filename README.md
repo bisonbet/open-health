@@ -50,10 +50,7 @@
       • Symptoms
     </td>
     <td>
-      • Meta LLaMA<br>
-      • Google Gemma<br>
-      • DeepSeek-V3<br>
-      • and more!
+      • Any model supported by Ollama
     </td>
   </tr>
 </table>
@@ -81,7 +78,7 @@ graph LR
     end
 
     subgraph AI Integration
-        C1[LLM Processing<br>Commercial & Local Models]
+        C1[LLM Processing<br>Local Models via Ollama]
         C2[Interaction Methods<br>RAG/Cache/Agents]
     end
 
@@ -166,7 +163,7 @@ graph LR
    Open your browser and navigate to `https://localhost` to begin using OpenHealth.
 
 > **Note:** The system consists of two main components: document parsing and LLM. 
-For document parsing, we use docling, an open source project lead by IBM.  You can read more here: 
+For document parsing, we use docling, an open source project lead by IBM.
 For LLM chat and vision, we use Ollama and the model(s) of your choice.
 
 > **Note:** On first run, if you are using the local ollama container, it will download two models - gemma3:4b for vision parsing and deepseek-r1:8b for interactive discussion. This will take a bit of time!  You are welcome to use bigger and/or different models limited only by your own hardware specs.
