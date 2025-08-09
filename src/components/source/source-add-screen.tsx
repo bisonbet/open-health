@@ -11,7 +11,7 @@ import useSWR from "swr";
 import {HealthData, HealthDataCreateResponse, HealthDataListResponse} from "@/app/api/health-data/route";
 import DynamicForm from '../form/dynamic-form';
 import JSONEditor from '../form/json-editor';
-import cuid from "cuid";
+import { createId } from "@paralleldrive/cuid2";
 import {cn} from "@/lib/utils";
 import Image from "next/image";
 import {FaChevronLeft, FaChevronRight} from 'react-icons/fa';
@@ -29,7 +29,10 @@ import {VISION_MODEL_PREFERENCES, getFirstAvailableModel} from "@/config/model-p
 
 const Select = dynamic(() => import('react-select'), {ssr: false});
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
+// Configure PDF.js worker
+if (typeof window !== 'undefined') {
+    pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+}
 
 interface BoundingBox {
     vertices: { x: number, y: number }[]
@@ -217,6 +220,16 @@ const symptomsFields = (t: any): Field[] => [
 ];
 
 const selectStyles = {
+    control: (base: any, state: any) => ({
+        ...base,
+        backgroundColor: 'hsl(var(--background))',
+        borderColor: state.isFocused ? 'hsl(var(--ring))' : 'hsl(var(--border))',
+        color: 'hsl(var(--foreground))',
+        boxShadow: state.isFocused ? '0 0 0 1px hsl(var(--ring))' : 'none',
+        '&:hover': {
+            borderColor: 'hsl(var(--border))'
+        }
+    }),
     menu: (base: any) => ({
         ...base,
         backgroundColor: 'hsl(var(--popover))',
@@ -226,8 +239,16 @@ const selectStyles = {
     }),
     option: (base: any, state: any) => ({
         ...base,
-        backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'hsl(var(--popover))',
-        color: 'hsl(var(--foreground))',
+        backgroundColor: state.isSelected 
+            ? 'hsl(var(--primary))' 
+            : state.isFocused 
+                ? 'hsl(var(--accent))' 
+                : 'hsl(var(--popover))',
+        color: state.isSelected 
+            ? 'hsl(var(--primary-foreground))' 
+            : state.isFocused 
+                ? 'hsl(var(--accent-foreground))' 
+                : 'hsl(var(--popover-foreground))',
         cursor: 'pointer',
         ':active': {
             backgroundColor: 'hsl(var(--accent))',
@@ -237,26 +258,17 @@ const selectStyles = {
         ...base,
         color: 'hsl(var(--foreground))',
     }),
-    control: (base: any) => ({
+    placeholder: (base: any) => ({
         ...base,
-        backgroundColor: 'hsl(var(--background))',
-        borderColor: 'hsl(var(--border))',
-        '&:hover': {
-            borderColor: 'hsl(var(--ring))',
-        },
-    }),
-    menuList: (base: any) => ({
-        ...base,
-        backgroundColor: 'hsl(var(--popover))',
-        color: 'hsl(var(--foreground))',
+        color: 'hsl(var(--muted-foreground))',
     }),
     input: (base: any) => ({
         ...base,
         color: 'hsl(var(--foreground))',
     }),
-    placeholder: (base: any) => ({
+    indicatorSeparator: (base: any) => ({
         ...base,
-        color: 'hsl(var(--muted-foreground))',
+        backgroundColor: 'hsl(var(--border))',
     }),
     dropdownIndicator: (base: any) => ({
         ...base,
@@ -265,11 +277,10 @@ const selectStyles = {
     clearIndicator: (base: any) => ({
         ...base,
         color: 'hsl(var(--muted-foreground))',
-    }),
-    indicatorSeparator: (base: any) => ({
-        ...base,
-        backgroundColor: 'hsl(var(--border))',
-    }),
+        '&:hover': {
+            color: 'hsl(var(--foreground))',
+        }
+    })
 };
 
 const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
@@ -333,7 +344,7 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                         <label
                             htmlFor="file-upload"
                             className={cn(
-                                "flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50",
+                                "flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors",
                                 uploadStatus === 'uploading' && "opacity-50 cursor-not-allowed"
                             )}
                         >
@@ -358,7 +369,7 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                         />
 
                         <button
-                            className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 w-full"
+                            className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors w-full"
                             onClick={handleAddSymptoms}
                         >
                             <Activity className="w-6 h-6 text-muted-foreground"/>
@@ -369,7 +380,7 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
                         </button>
 
                         <button
-                            className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 w-full"
+                            className="flex items-center gap-4 p-4 border rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors w-full"
                             onClick={onImportExternalHealth}
                         >
                             <Database className="w-6 h-6 text-muted-foreground"/>
@@ -764,15 +775,15 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                         <div
                                             className="relative w-fit bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 bg-background p-2 rounded shadow">
                                             <button
-                                                className="px-4 py-2 bg-gray-300 rounded"
+                                                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                                                 disabled={page <= 1}
                                             >
                                                 <FaChevronLeft/>
                                             </button>
-                                            <span>{page} / {numPages}</span>
+                                            <span className="text-foreground">{page} / {numPages}</span>
                                             <button
-                                                className="px-4 py-2 bg-gray-300 rounded"
+                                                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                                 onClick={() => setPage((prev) => Math.min(prev + 1, numPages))}
                                                 disabled={page >= numPages}
                                             >
@@ -913,6 +924,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                         isRtl={false}
                         isSearchable={true}
                         name="field"
+                        placeholder="Search for a field..."
                         options={testItems.map((bloodTestItem) => (
                             {
                                 value: bloodTestItem.name,
@@ -932,6 +944,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                 setShowAddFieldName(undefined);
                             }
                         }}
+                        styles={selectStyles}
                     />
                     <div className="flex flex-row gap-2 mt-4">
                         <p className={
@@ -1000,9 +1013,10 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                         </p>
                         <p className={
                             cn(
-                                'bg-gray-300 text-black py-2 px-4 rounded',
-                                'hover:bg-gray-400',
-                                'focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50',
+                                'bg-secondary text-secondary-foreground py-2 px-4 rounded cursor-pointer',
+                                'hover:bg-secondary/80',
+                                'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-opacity-50',
+                                'transition-colors'
                             )
                         }
                            onClick={() => setShowAddFieldModal(false)}
@@ -1065,7 +1079,7 @@ export default function SourceAddScreen() {
             const files = Array.from(e.target.files);
 
             for (const file of files) {
-                const id = cuid();
+                const id = createId();
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('id', id);
@@ -1155,7 +1169,7 @@ export default function SourceAddScreen() {
     const handleAddSymptoms = async (date: string) => {
         const now = new Date();
         const body = {
-            id: cuid(),
+            id: createId(),
             type: HealthDataType.SYMPTOMS.id,
             data: {
                 date,

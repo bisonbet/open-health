@@ -11,10 +11,11 @@ export const CHAT_MODEL_PREFERENCES: ModelPreference[] = [
 ];
 
 // List of preferred models for vision/document parsing, in order of preference
+// Note: Larger models are more reliable for complex PDF parsing but require more resources
 export const VISION_MODEL_PREFERENCES: ModelPreference[] = [
-    { id: "gemma3:27b", name: "Gemma 3 27B" },
-    { id: "gemma3:12b", name: "Gemma 3 12B" },
-    { id: "gemma3:4b", name: "Gemma 3 4B" }
+    { id: "gemma3:27b", name: "Gemma 3 27B (Recommended for PDFs)" },
+    { id: "gemma3:12b", name: "Gemma 3 12B (Good balance)" },
+    { id: "gemma3:4b", name: "Gemma 3 4B (Fast but may timeout on complex PDFs)" }
 ];
 
 // Helper function to get the first available model from a list of preferences

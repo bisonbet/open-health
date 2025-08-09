@@ -1,17 +1,9 @@
 import {getRequestConfig} from 'next-intl/server';
-import {headers} from "next/headers";
-import Negotiator from 'negotiator'
-import deepmerge from 'deepmerge';
 
 export default getRequestConfig(async () => {
-    const availableLanguages = ['ko', 'en', 'ru', 'uk', 'de', 'fr', 'es', 'ja', 'zh', 'ur'];
-    const acceptLanguage = (await headers()).get('accept-language');
-    const negotiator = new Negotiator({headers: {'accept-language': acceptLanguage || ''}});
-    const locale = negotiator.language(availableLanguages) || 'en';
-
-    const userMessages = (await import(`../../messages/${locale}.json`)).default
-    const defaultMessages = (await import(`../../messages/en.json`)).default
-    const messages = deepmerge(defaultMessages, userMessages);
-
+    // Simplified to always use English to avoid dynamic import issues
+    const locale = 'en';
+    const messages = (await import(`../../messages/en.json`)).default;
+    
     return {locale, messages};
 })

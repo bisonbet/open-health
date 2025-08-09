@@ -12,6 +12,22 @@ import FormData from "form-data";
 import fs from "fs";
 import { currentDeploymentEnv } from "@/lib/current-deployment-env";
 
+const DOCLING_PARAMS = {
+  OCR_ENGINE: "easyocr",
+  PDF_BACKEND: "dlparse_v4",
+  FROM_FORMATS: ["pdf", "docx", "image"],
+  FORCE_OCR: "true",
+  IMAGE_EXPORT_MODE: "placeholder",
+  OCR_LANG: "en",
+  OCR_CONFIDENCE_THRESHOLD: "0.7",
+  OCR_DPI: "300",
+  OCR_PREPROCESSING: "true",
+  TABLE_MODE: "accurate",
+  ABORT_ON_ERROR: "false",
+  RETURN_AS_FILE: "false",
+  DO_OCR: "true",
+};
+
 /**
  * Represents the structure returned by docling-serve when we ask for JSON (OCR).
  * Adjust as necessary if docling-serve's schema changes.
@@ -103,80 +119,81 @@ export class DoclingDocumentParser extends BaseDocumentParser {
     }
   }
 
+  private async _performConversion(
+    inputPath: string,
+    toFormat: "json" | "md"
+  ): Promise<{ document: { json_content?: DoclingJsonContent; md_content?: string } }> {
+    // 1. Get file data
+    let fileData: Buffer | fs.ReadStream;
+    const fileName = "defaultfile.pdf"; // Or derive from path
+
+    if (inputPath.startsWith("http://") || inputPath.startsWith("https://")) {
+      console.log(`[Docling] Detected remote URL. Downloading from: ${inputPath}`);
+      const fileResponse = await fetch(inputPath);
+      if (!fileResponse.ok) {
+        throw new Error(
+          `Failed to download remote file: ${inputPath}. Status: ${fileResponse.status}`
+        );
+      }
+      fileData = await fileResponse.buffer();
+      console.log(`[Docling] Download complete. Size: ${fileData.length} bytes.`);
+    } else {
+      if (!fs.existsSync(inputPath)) {
+        throw new Error(`File does not exist: ${inputPath}`);
+      }
+      const stats = fs.statSync(inputPath);
+      console.log(`[Docling] Local file found. Size: ${stats.size} bytes.`);
+      fileData = fs.createReadStream(inputPath);
+    }
+
+    // 2. Build form data
+    const formData = new FormData();
+    formData.append("ocr_engine", DOCLING_PARAMS.OCR_ENGINE);
+    formData.append("pdf_backend", DOCLING_PARAMS.PDF_BACKEND);
+    DOCLING_PARAMS.FROM_FORMATS.forEach(format => formData.append("from_formats", format));
+    formData.append("force_ocr", DOCLING_PARAMS.FORCE_OCR);
+    formData.append("image_export_mode", DOCLING_PARAMS.IMAGE_EXPORT_MODE);
+    formData.append("ocr_lang", DOCLING_PARAMS.OCR_LANG);
+    formData.append("ocr_confidence_threshold", DOCLING_PARAMS.OCR_CONFIDENCE_THRESHOLD);
+    formData.append("ocr_dpi", DOCLING_PARAMS.OCR_DPI);
+    formData.append("ocr_preprocessing", DOCLING_PARAMS.OCR_PREPROCESSING);
+    formData.append("table_mode", DOCLING_PARAMS.TABLE_MODE);
+    formData.append("files", fileData, fileName);
+    formData.append("abort_on_error", DOCLING_PARAMS.ABORT_ON_ERROR);
+    formData.append("to_formats", toFormat);
+    formData.append("return_as_file", DOCLING_PARAMS.RETURN_AS_FILE);
+    formData.append("do_ocr", DOCLING_PARAMS.DO_OCR);
+
+    // 3. Send request
+    const response = await fetch(`${this.doclingUrl}/v1alpha/convert/file`, {
+      method: "POST",
+      headers: {
+        ...formData.getHeaders(),
+        Accept: "application/json",
+      },
+      body: formData,
+    });
+
+    console.log(`[Docling] response returned with status: ${response.status} for format ${toFormat}`);
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(
+        `Docling server error: ${response.status} - ${response.statusText}\n${errText}`
+      );
+    }
+
+    return response.json();
+  }
+
   /**
    * OCR method. If an unexpected error happens it returns an empty OCR response.
    */
   async ocr(options: DocumentOCROptions): Promise<OCRParseResult> {
     try {
       console.log("[Docling] Starting ocr method...");
-      const inputPath = options.input;
+      const data = await this._performConversion(options.input, 'json');
 
-      // 1. Prepare the file data (Buffer if remote, ReadStream if local)
-      let fileData: Buffer | fs.ReadStream;
-      const fileName = "defaultfile.pdf";
-
-      if (inputPath.startsWith("http://") || inputPath.startsWith("https://")) {
-        console.log(`[Docling] Detected remote URL. Downloading from: ${inputPath}`);
-        const fileResponse = await fetch(inputPath);
-        if (!fileResponse.ok) {
-          throw new Error(
-            `Failed to download remote file: ${inputPath}. Status: ${fileResponse.status}`
-          );
-        }
-        fileData = await fileResponse.buffer();
-        console.log(`[Docling] Download complete. Size: ${fileData.length} bytes.`);
-      } else {
-        if (!fs.existsSync(inputPath)) {
-          throw new Error(`File does not exist: ${inputPath}`);
-        }
-        const stats = fs.statSync(inputPath);
-        console.log(`[Docling] Local file found. Size: ${stats.size} bytes.`);
-        fileData = fs.createReadStream(inputPath);
-      }
-
-      // 2. Build form data just like your working curl
-      const formData = new FormData();
-      formData.append("ocr_engine", "easyocr");
-      formData.append("pdf_backend", "dlparse_v4");
-      formData.append("from_formats", "pdf");
-      formData.append("from_formats", "docx");
-      formData.append("from_formats", "image");
-      formData.append("force_ocr", "true");
-      formData.append("image_export_mode", "placeholder");
-      formData.append("ocr_lang", "en");
-      formData.append("ocr_confidence_threshold", "0.7");  // Adjust confidence threshold
-      formData.append("ocr_dpi", "300");  // Increase DPI for better quality
-      formData.append("ocr_preprocessing", "true");  // Enable image preprocessing
-      formData.append("table_mode", "accurate");
-      formData.append("files", fileData, fileName);
-      formData.append("abort_on_error", "false");
-      formData.append("to_formats", "json");
-      formData.append("return_as_file", "false");
-      formData.append("do_ocr", "true");
-
-      console.log("[Docling] FormData built. Sending request now...");
-
-      // 3. Send to docling-serve
-      const response = await fetch(`${this.doclingUrl}/v1alpha/convert/file`, {
-        method: "POST",
-        headers: {
-          ...formData.getHeaders(),
-          Accept: "application/json",
-        },
-        body: formData,
-      });
-
-      console.log(`[Docling] OCR response returned with status: ${response.status}`);
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(
-          `Docling server error (OCR): ${response.status} - ${response.statusText}\n${errText}`
-        );
-      }
-
-      // 4. Parse response
-      const data = await response.json();
       if (!data.document || !data.document.json_content) {
         console.error("Docling OCR response:", data);
         throw new Error("No `document.json_content` in docling-serve response");

@@ -7,11 +7,11 @@ RUN apk add -U graphicsmagick ghostscript vips-dev fftw-dev build-base libpng li
 WORKDIR /app
 
 # Copy package.json and prisma schema first to leverage Docker cache
-COPY package.json prisma/ ./
+COPY package.json package-lock.json* ./
+COPY prisma/ ./prisma/
 
 # Install npm packages
-RUN npm install && \
-    npm install --save-dev @types/node
+RUN npm ci && npm cache clean --force
 
 # Copy the rest of the application code
 COPY . .
@@ -19,32 +19,17 @@ COPY . .
 # Set build arguments
 ARG OLLAMA_URL
 ARG DOCLING_URL
-
-# Debug: Print build arguments
-RUN echo "Build ARG OLLAMA_URL: ${OLLAMA_URL}"
-RUN echo "Build ARG DOCLING_URL: ${DOCLING_URL}"
-
-# Check if OLLAMA_URL is using the default value
-RUN if [ "${OLLAMA_URL}" = "http://ollama:11434" ]; then \
-    echo "WARNING: Using default OLLAMA_URL value. This might not be what you want."; \
-    echo "To use a different OLLAMA_URL:"; \
-    echo "1. Unset the environment variable: unset OLLAMA_URL"; \
-    echo "2. Set the correct value in your .env file"; \
-    echo "3. Rebuild with: docker compose -f docker-compose.yaml --env-file .env build --no-cache app"; \
-    exit 1; \
-fi
+ARG AUTH_SECRET
+ARG ENCRYPTION_KEY
+ARG NEXT_PUBLIC_URL
 
 # Set environment variables from build arguments with explicit default values
 ENV OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
 ENV DOCLING_URL=${DOCLING_URL:-http://docling-serve:5001}
-
-# Debug: Print environment variables
-RUN echo "ENV OLLAMA_URL: ${OLLAMA_URL}"
-RUN echo "ENV DOCLING_URL: ${DOCLING_URL}"
-
-# Debug: Print the actual environment variable value
-RUN env | grep OLLAMA_URL
-RUN env | grep DOCLING_URL
+ENV AUTH_SECRET=${AUTH_SECRET}
+ENV ENCRYPTION_KEY=${ENCRYPTION_KEY}
+ENV NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL:-http://localhost:3000}
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application, create user, and set permissions
 RUN npm run build && \

@@ -56,9 +56,30 @@ services:
       - "127.0.0.1:3000:3000"
     restart: always
     environment:
+      # Database
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+      
+      # Services
       OLLAMA_URL: ${OLLAMA_URL}
       DOCLING_URL: ${DOCLING_URL:-http://docling-serve:5001}
+      
+      # Web
+      NEXT_PUBLIC_URL: ${NEXT_PUBLIC_URL:-http://localhost:3000}
+      NEXT_PUBLIC_OLLAMA_URL: ${NEXT_PUBLIC_OLLAMA_URL:-${OLLAMA_URL}}
+      
+      # Authentication
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: ${AUTH_TRUST_HOST:-http://localhost:3000}
+      
+      # Encryption
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      
+      # Analytics (optional)
+      NEXT_PUBLIC_AMPLITUDE_API_KEY: ${NEXT_PUBLIC_AMPLITUDE_API_KEY:-}
+      
+      # Deployment Environment
+      DEPLOYMENT_ENV: ${DEPLOYMENT_ENV:-local}
+      NEXT_PUBLIC_DEPLOYMENT_ENV: ${NEXT_PUBLIC_DEPLOYMENT_ENV:-local}
     networks:
       - mynetwork
 

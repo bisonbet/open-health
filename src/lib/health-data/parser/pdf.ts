@@ -152,7 +152,8 @@ async function inference(inferenceOptions: InferenceOptions) {
   const visionParserModel = visionParserModels.find((e) => e.id === visionParserOptions.model);
   if (!visionParserModel) throw new Error("Invalid vision parser model");
 
-  // Process the batch inputs
+  // Process the batch inputs with reduced concurrency for Ollama
+  const concurrencyLimit = visionParserOptions.parser === 'Ollama' ? 1 : 4;
   const batchData = await processBatchWithConcurrency(
     batchInputs,
     async (input) =>
@@ -163,7 +164,7 @@ async function inference(inferenceOptions: InferenceOptions) {
         apiKey: visionParserOptions.apiKey,
         apiUrl: visionParserOptions.apiUrl,
       }),
-    4
+    concurrencyLimit
   );
 
   // Merge the results

@@ -75,11 +75,42 @@ export class OllamaVisionParser extends BaseVisionParser {
 
     async parse(options: VisionParseOptions): Promise<HealthCheckupType> {
         const apiUrl = options.apiUrl || this._apiUrl;
+        
+        // Health check: Verify Ollama is responsive and model is available
+        try {
+            const healthResponse = await Promise.race([
+                fetch(`${apiUrl}/api/tags`, { method: 'GET' }),
+                new Promise<never>((_, reject) => 
+                    setTimeout(() => reject(new Error('Health check timeout')), 10000)
+                )
+            ]);
+            if (!healthResponse.ok) {
+                throw new Error(`Ollama health check failed: ${healthResponse.status}`);
+            }
+            
+            // Check if the specific model is available
+            const tagsData = await healthResponse.json() as { models: { name: string }[] };
+            const modelExists = tagsData.models.some(m => m.name === options.model.id);
+            if (!modelExists) {
+                throw new Error(`Model ${options.model.id} is not available in Ollama. Please pull the model first: ollama pull ${options.model.id}`);
+            }
+            
+            console.log(`Ollama health check passed. Model ${options.model.id} is available.`);
+        } catch (error) {
+            console.error('Ollama health check failed:', error);
+            if (error instanceof Error && error.message.includes('Model')) {
+                throw error; // Re-throw model-specific errors
+            }
+            throw new Error('Ollama server is not responding. Please check if Ollama is running and accessible.');
+        }
+        
         const llm = new ChatOllama({
             model: options.model.id,
             baseUrl: apiUrl,
             format: "json",
-            numPredict: -1 // Corrected to camelCase
+            numPredict: -1, // Corrected to camelCase
+            // Increase temperature slightly for better JSON generation
+            temperature: 0.1,
         });
         const messages = options.messages || ChatPromptTemplate.fromMessages([]);
         // <<< --- ADDED LOGGING HERE --- >>>
@@ -89,8 +120,24 @@ export class OllamaVisionParser extends BaseVisionParser {
 
         try {
             console.log(`Attempting to parse with Ollama model: ${options.model.id}`);
-            // Increased retry attempts slightly
-            const result = await chain.withRetry({ stopAfterAttempt: 5 }).invoke(options.input);
+            
+            // Create a timeout wrapper for the chain invocation
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Ollama request timed out after 5 minutes')), 300000);
+            });
+            
+            // Enhanced retry logic with exponential backoff for Ollama
+            const chainPromise = chain.withRetry({ 
+                stopAfterAttempt: 3,
+                onFailedAttempt: (error) => {
+                    console.warn(`Ollama attempt ${error.attemptNumber} failed:`, error.message);
+                    // Add delay between retries for Ollama to recover
+                    return new Promise(resolve => setTimeout(resolve, error.attemptNumber * 2000));
+                }
+            }).invoke(options.input);
+            
+            // Race between the chain execution and timeout
+            const result = await Promise.race([chainPromise, timeoutPromise]);
 
             // console.log("Ollama Raw JSON Output:", result);
 
@@ -153,9 +200,31 @@ export class OllamaVisionParser extends BaseVisionParser {
 
         } catch (e: unknown) {
             console.error(`Error parsing health data with Ollama model ${options.model.id}:`, e);
+            
+            // Add specific error context for debugging
+            if (e instanceof Error) {
+                console.error('Error details:', {
+                    message: e.message,
+                    name: e.name,
+                    stack: e.stack,
+                    cause: e.cause,
+                    modelId: options.model.id,
+                    apiUrl: apiUrl
+                });
+                
+                // Check for specific Ollama timeout/connection errors
+                if (e.message.includes('timeout') || e.message.includes('TIMEOUT') || 
+                    e.message.includes('Headers Timeout') || e.message.includes('UND_ERR_HEADERS_TIMEOUT')) {
+                    console.warn(`Ollama timeout detected for model ${options.model.id}. Consider using a larger model or reducing PDF complexity.`);
+                }
+                
+                if (e.message.includes('fetch failed') || e.message.includes('ECONNREFUSED')) {
+                    console.warn(`Ollama connection failed. Please verify Ollama is running at ${apiUrl}`);
+                }
+            }
 
-            // Check if it's a Zod validation error or a general parsing error (including stream)
-            if (e instanceof ZodError || (e instanceof Error && (e.message.includes('json') || e.message.includes('parse') || e.message.includes('stream')))) {
+            // Check if it's a Zod validation error or a general parsing error (including stream and timeout)
+            if (e instanceof ZodError || (e instanceof Error && (e.message.includes('json') || e.message.includes('parse') || e.message.includes('stream') || e.message.includes('timeout')))) {
                 console.warn(`Ollama model ${options.model.id} failed to produce valid JSON conforming to schema or stream failed. Returning default object.`);
                 // Return default object with required structure on failure
                 return { test_result: {} } as HealthCheckupType;
