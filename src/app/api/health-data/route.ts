@@ -169,7 +169,7 @@ export async function POST(
                 data: {
                     status: 'COMPLETED',
                     metadata: JSON.parse(JSON.stringify({ocr: ocrResults[0], dataPerPage: pages[0]})),
-                    data: {...baseData, ...data[0]}
+                    data: JSON.parse(JSON.stringify({...baseData, ...data[0]}))
                 }
             });
 

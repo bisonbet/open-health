@@ -5,6 +5,7 @@ import {Combobox} from '@/components/ui/combobox';
 import {countries} from '@/lib/countries';
 import {cn} from '@/lib/utils';
 import {useTranslations} from 'next-intl';
+import {calculateBMI, getBMICategory} from '@/lib/utils/bmi-calculator';
 
 export interface PersonalInfoData {
     gender: string;
@@ -202,6 +203,36 @@ export default function PersonalInfo({value, onChange, touchedFields = {}}: Pers
                         )}
                     </div>
                 </div>
+
+                {/* Calculated BMI Display */}
+                {value.height && value.weight && (
+                    <div className="space-y-2">
+                        <Label>{t('bmi.label', { defaultValue: 'BMI (Calculated)' })}</Label>
+                        <div className="p-3 bg-gray-50 rounded-md border">
+                            {(() => {
+                                const bmi = calculateBMI(value.height, value.heightUnit, value.weight, value.weightUnit);
+                                if (bmi) {
+                                    const category = getBMICategory(bmi);
+                                    return (
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-medium">{bmi} kg/m²</span>
+                                            <span className={cn(
+                                                "text-sm px-2 py-1 rounded",
+                                                category === 'Normal weight' && "bg-green-100 text-green-800",
+                                                category === 'Underweight' && "bg-blue-100 text-blue-800",
+                                                category === 'Overweight' && "bg-yellow-100 text-yellow-800",
+                                                category === 'Obese' && "bg-red-100 text-red-800"
+                                            )}>
+                                                {category}
+                                            </span>
+                                        </div>
+                                    );
+                                }
+                                return <span className="text-gray-500">Enter height and weight to calculate BMI</span>;
+                            })()}
+                        </div>
+                    </div>
+                )}
 
                 <div className="space-y-2">
                     <Label htmlFor="ethnicity">{t('ethnicity.label')}</Label>

@@ -26,11 +26,19 @@ export async function PATCH(
     const {id} = await params
     const body: HealthDataPatchRequest = await req.json()
 
-    const healthData = await prisma.healthData.update({
-        where: {id},
-        data: body
-    })
-    return NextResponse.json({healthData})
+    try {
+        const healthData = await prisma.healthData.update({
+            where: {id},
+            data: body
+        })
+        return NextResponse.json({healthData})
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+            // Record not found
+            return NextResponse.json({ error: 'Health data not found' }, { status: 404 });
+        }
+        throw error;
+    }
 }
 
 export async function DELETE(

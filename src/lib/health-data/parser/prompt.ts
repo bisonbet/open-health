@@ -37,7 +37,7 @@ Step 2: Cross-Validation and Prioritization
 Step 3: Handle Special Cases
 *   For multi-component tests (e.g., blood pressure), create **separate snake_case keys** with their respective values formatted using the required value/unit object structure.
 *   For blood pressure in "systolic/diastolic" format (e.g., "136/84"), create both a combined "blood_pressure" field and separate "systolic_blood_pressure" and "diastolic_blood_pressure" fields.
-*   For vital signs data, look for temperature, pulse, oxygen saturation, height, weight, and BMI even if not explicitly labeled.
+*   For vital signs data, look for temperature, pulse, oxygen saturation, height, and weight (DO NOT extract BMI - it will be calculated automatically).
 *   If tests are labeled (e.g., left/right), incorporate this into the snake_case key if appropriate (e.g., \`left_vision\`, \`right_vision\`).
 
 Step 4: Final JSON Construction
@@ -61,14 +61,14 @@ Step 4: Final JSON Construction
 4. Pulse/heart rate should be numeric with "bpm" unit when available
 5. Height should include units (cm, ft/in) and convert when possible
 6. Weight should include units (kg, lbs) and convert when possible
-7. BMI should be numeric with "kg/m2" unit
+7. DO NOT extract BMI - it will be calculated automatically from height and weight
 8. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
 9. Dates should be in yyyy-mm-dd format
 10. Percentages should be numeric values without the % symbol
 11. Ranges should be split into separate min/max values
 
 **Vital Signs Pattern Recognition:**
-- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg", "BMI: X"
+- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg"
 - Extract these even if they appear in unstructured text or mixed with other data
 - Be flexible with formatting variations (spaces, colons, units in different positions)
 
@@ -97,7 +97,7 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 1.  Extract only the actual test results from the text. Ignore reference ranges or irrelevant text/numbers.
 2.  For multi-component tests (e.g., blood pressure), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
 3.  For blood pressure in "systolic/diastolic" format (e.g., "136/84"), create both a combined "blood_pressure" field and separate "systolic_blood_pressure" and "diastolic_blood_pressure" fields.
-4.  Look for vital signs patterns even in unstructured text: temperature, pulse, blood pressure, oxygen saturation, height, weight, BMI.
+4.  Look for vital signs patterns even in unstructured text: temperature, pulse, blood pressure, oxygen saturation, height, weight (DO NOT extract BMI).
 5.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
 6.  Avoid duplicate test keys within \`test_result\`.
 
@@ -108,14 +108,14 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 4. Pulse/heart rate should be numeric with "bpm" unit when available
 5. Height should include units (cm, ft/in) and convert when possible
 6. Weight should include units (kg, lbs) and convert when possible
-7. BMI should be numeric with "kg/m2" unit
+7. DO NOT extract BMI - it will be calculated automatically from height and weight
 8. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
 9. Dates should be in yyyy-mm-dd format
 10. Percentages should be numeric values without the % symbol
 11. Ranges should be split into separate min/max values
 
 **Vital Signs Pattern Recognition:**
-- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg", "BMI: X"
+- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg"
 - Extract these even if they appear in unstructured text or mixed with other data
 - Be flexible with formatting variations (spaces, colons, units in different positions)
 
@@ -143,7 +143,7 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 2.  Extract only the actual test results. Do not extract reference ranges or other non-result text/numbers.
 3.  For multi-component tests (e.g., blood pressure), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
 4.  For blood pressure in "systolic/diastolic" format (e.g., "136/84"), create both a combined "blood_pressure" field and separate "systolic_blood_pressure" and "diastolic_blood_pressure" fields.
-5.  Look for vital signs patterns even in unstructured text: temperature, pulse, blood pressure, oxygen saturation, height, weight, BMI.
+5.  Look for vital signs patterns even in unstructured text: temperature, pulse, blood pressure, oxygen saturation, height, weight (DO NOT extract BMI).
 6.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
 7.  Avoid duplicate test keys within \`test_result\`. If a test appears multiple times, select the clearest reading.
 
@@ -154,14 +154,14 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 4. Pulse/heart rate should be numeric with "bpm" unit when available
 5. Height should include units (cm, ft/in) and convert when possible
 6. Weight should include units (kg, lbs) and convert when possible
-7. BMI should be numeric with "kg/m2" unit
+7. DO NOT extract BMI - it will be calculated automatically from height and weight
 8. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
 9. Dates should be in yyyy-mm-dd format
 10. Percentages should be numeric values without the % symbol
 11. Ranges should be split into separate min/max values
 
 **Vital Signs Pattern Recognition:**
-- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg", "BMI: X"
+- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg"
 - Extract these even if they appear in unstructured text or mixed with other data
 - Be flexible with formatting variations (spaces, colons, units in different positions)
 
@@ -288,28 +288,174 @@ Extract the following clinical information when available:
 **Be careful with OCR accuracy and prioritize clear, readable information.**`
         ],
         ["human", [{ type: "image_url", image_url: { url: '{image_data}' } }]],
+    ],
+
+    // Imaging report prompts for radiology reports (X-ray, MRI, CT, etc.)
+    imagingBoth: [
+        [
+            "human",
+            `You are a specialized medical imaging analyst. Your task is to extract structured information from medical imaging reports (X-ray, MRI, CT, Ultrasound, etc.) using BOTH text and image data. Output the information in a **strict JSON format**.
+
+**Critical Output Format Requirements:**
+1. The entire output MUST be a single JSON object.
+2. The JSON object MUST have a single top-level key named EXACTLY \`imaging_report\`.
+3. The value of \`imaging_report\` MUST be an object containing the structured imaging data.
+4. Use the exact field names specified below (snake_case format).
+5. If a field is not found, set it to null.
+6. DO NOT extract lab values, vital signs, or blood pressure - this is an imaging report, not lab results.
+7. Focus ONLY on radiological findings, impressions, and imaging-specific information.
+
+**Required Imaging Report Fields:**
+- exam_type: Type of imaging study (X-ray, MRI, CT, Ultrasound, etc.)
+- body_part: Body part or region examined
+- exam_date: Date of examination (yyyy-mm-dd format)
+- clinical_information: Clinical history, symptoms, reason for exam
+- clinical_indication: Medical indication or reason for the study
+- technique: Technical parameters, contrast used, sequences, etc.
+- contrast: Contrast agent used (if any)
+- findings: Detailed radiological findings and observations
+- bones: Bone-related findings
+- joints: Joint-related findings
+- soft_tissues: Soft tissue findings
+- organs: Organ-specific findings
+- vessels: Vascular findings
+- measurements: Any measurements taken during the study
+- dimensions: Size measurements of structures or abnormalities
+- impression: Radiologist's impression or conclusion
+- diagnosis: Primary diagnosis or differential diagnoses
+- recommendations: Follow-up recommendations or additional studies needed
+- follow_up: Suggested follow-up timeline or actions
+- comparison: Comparison with previous studies
+- prior_studies: Reference to previous imaging studies
+- limitations: Study limitations or technical issues
+- quality: Image quality assessment
+- artifacts: Imaging artifacts noted
+- cardiovascular: Heart and vascular findings
+- pulmonary: Lung and respiratory findings
+- gastrointestinal: GI tract findings
+- genitourinary: Kidney, bladder, reproductive organ findings
+- neurological: Brain, spine, nerve findings
+- musculoskeletal: Bone, joint, muscle findings
+- severity: Severity assessment of findings
+- urgency: Urgency level or critical findings
+- notes: Additional notes or comments
+- radiologist: Reporting radiologist name
+
+**Extraction Guidelines:**
+1. This is a RADIOLOGY/IMAGING REPORT - do NOT extract lab values, vital signs, or blood pressure
+2. Cross-validate information between text and image sources
+3. Prioritize clear, complete information over partial data
+4. Preserve medical terminology and clinical context
+5. Extract measurements with appropriate units (sizes, dimensions of anatomical structures)
+6. Identify and categorize findings by anatomical system
+7. Distinguish between normal and abnormal findings
+8. Extract recommendations and follow-up instructions
+9. Note any technical limitations or artifacts
+10. Focus on radiological findings, not patient vital signs or lab results
+
+**Final Output:** Return a JSON object with the "imaging_report" key containing all extracted fields.`
+        ],
+        ["human", 'This is the parsed text:\n{context}'],
+        ["human", [{ type: "image_url", image_url: { url: '{image_data}' } }]],
+    ],
+
+    imagingText: [
+        [
+            "human",
+            `As a medical imaging analyst, extract structured information from the provided imaging report text.
+
+**Required Output Format:**
+1. The entire output MUST be a single JSON object.
+2. The JSON object MUST have a single top-level key named EXACTLY \`imaging_report\`.
+3. Extract all relevant imaging report fields as specified.
+4. Use snake_case field names and set missing fields to null.
+5. DO NOT extract lab values, vital signs, or blood pressure from imaging reports.
+6. Focus ONLY on radiological findings and imaging-specific information.
+
+**Key Fields to Extract:**
+- Basic information: exam_type, body_part, exam_date
+- Clinical context: clinical_information, clinical_indication
+- Technical details: technique, contrast
+- Findings: findings, impression, diagnosis
+- Anatomical findings: bones, joints, soft_tissues, organs, vessels
+- System-specific findings: cardiovascular, pulmonary, gastrointestinal, genitourinary, neurological, musculoskeletal
+- Measurements: measurements, dimensions
+- Recommendations: recommendations, follow_up
+- Comparison: comparison, prior_studies
+- Quality: quality, artifacts, limitations
+- Additional: severity, urgency, notes, radiologist
+
+**Focus on extracting the radiologist's findings, impressions, and recommendations accurately.**`
+        ],
+        ["human", 'This is the parsed text:\n{context}']
+    ],
+
+    imagingImage: [
+        [
+            "human",
+            `As a medical imaging analyst, extract structured information from the provided imaging report image.
+
+**Critical Output Format Requirements:**
+1. The entire output MUST be a single JSON object.
+2. The JSON object MUST have a single top-level key named EXACTLY \`imaging_report\`.
+3. Extract imaging report fields from the image, being careful with OCR accuracy.
+4. Use snake_case field names and set missing fields to null.
+5. DO NOT extract lab values, vital signs, or blood pressure from imaging reports.
+6. This is a RADIOLOGY REPORT - focus on imaging findings only.
+
+**Extract from the image:**
+- Document header information (exam type, date, patient info)
+- Clinical indication and history
+- Technical parameters and contrast information
+- Detailed findings and observations
+- Radiologist's impression and diagnosis
+- Recommendations and follow-up instructions
+- Measurements and dimensions
+- Comparison with prior studies
+- Quality assessments and limitations
+
+**Be especially careful with:**
+- Medical terminology and abbreviations
+- Numerical measurements and their units
+- Anatomical references and locations
+- Normal vs. abnormal findings
+- Critical or urgent findings
+
+**Prioritize clear, readable information and preserve medical context.**`
+        ],
+        ["human", [{ type: "image_url", image_url: { url: '{image_data}' } }]],
     ]
 };
 
 /**
- * Get the appropriate prompt based on the input type
+ * Get the appropriate prompt based on the input type and document type
  *
  * @param excludeImage
  * @param excludeText
  * @param useClinicalPrompts - Whether to use clinical document prompts
+ * @param useImagingPrompts - Whether to use imaging report prompts
  */
-export function getParsePrompt({ excludeImage, excludeText, useClinicalPrompts = false }: {
+export function getParsePrompt({ excludeImage, excludeText, useClinicalPrompts = false, useImagingPrompts = false }: {
     excludeImage: boolean,
     excludeText: boolean,
-    useClinicalPrompts?: boolean
+    useClinicalPrompts?: boolean,
+    useImagingPrompts?: boolean
 }): BaseMessagePromptTemplateLike[] {
+    // Determine which prompt set to use based on document type
+    let promptPrefix = '';
+    if (useImagingPrompts) {
+        promptPrefix = 'imaging';
+    } else if (useClinicalPrompts) {
+        promptPrefix = 'clinical';
+    }
+
     if (!excludeImage && !excludeText) {
-        return prompts[useClinicalPrompts ? 'clinicalBoth' : 'both']
+        return prompts[promptPrefix ? `${promptPrefix}Both` : 'both'];
     } else if (excludeImage && !excludeText) {
-        return prompts[useClinicalPrompts ? 'clinicalText' : 'onlyText']
+        return prompts[promptPrefix ? `${promptPrefix}Text` : 'onlyText'];
     } else if (!excludeImage && excludeText) {
-        return prompts[useClinicalPrompts ? 'clinicalImage' : 'onlyImage']
+        return prompts[promptPrefix ? `${promptPrefix}Image` : 'onlyImage'];
     } else {
-        throw new Error('Invalid prompt type')
+        throw new Error('Invalid prompt type');
     }
 }

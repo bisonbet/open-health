@@ -180,25 +180,7 @@ export function extractVitalSignsFromText(text: string): VitalSignsData {
     }
   }
   
-  // BMI patterns
-  const bmiPatterns = [
-    /bmi[:\s]*([0-9]+\.?[0-9]*)/gi,
-    /body\s*mass\s*index[:\s]*([0-9]+\.?[0-9]*)/gi,
-    /([0-9]+\.?[0-9]*)\s*kg\/m2/gi
-  ];
-  
-  for (const pattern of bmiPatterns) {
-    const matches = text.matchAll(pattern);
-    for (const match of matches) {
-      if (match[1] && !results.bmi) {
-        results.bmi = {
-          value: match[1],
-          unit: "kg/m2"
-        };
-        break;
-      }
-    }
-  }
+  // BMI is calculated automatically from height and weight, don't extract from text
   
   return results;
 }

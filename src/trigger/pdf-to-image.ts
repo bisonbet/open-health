@@ -1,5 +1,5 @@
 import { task } from '@trigger.dev/sdk/v3'
-import fetch from 'node-fetch'
+
 import sharp from 'sharp'
 
 interface PdfToImagesPayload {
@@ -19,7 +19,7 @@ export const pdfToImages = task({
         throw new Error(`Failed to fetch PDF: ${response.statusText}`)
       }
       
-      const buffer = await response.buffer()
+      const buffer = Buffer.from(await response.arrayBuffer())
       
       // Initialize sharp with the PDF buffer
       const pdf = sharp(buffer)

@@ -1,6 +1,78 @@
 import {z} from "zod";
 
 /**
+ * ImagingReport Schema for X-ray, MRI, CT, Ultrasound, etc.
+ * Structured to capture the standard sections of medical imaging reports
+ */
+export const ImagingReportSchema = z.object({
+    date: z.string().optional().nullable().describe("Examination date (yyyy-mm-dd)"),
+    name: z.string().optional().nullable().describe("Patient name"),
+    imaging_report: z.object({
+        // Basic exam information
+        exam_type: z.string().optional().nullable().describe("Type of imaging study (X-ray, MRI, CT, Ultrasound, etc.)"),
+        body_part: z.string().optional().nullable().describe("Body part or region examined"),
+        exam_date: z.string().optional().nullable().describe("Date of examination"),
+        
+        // Clinical information
+        clinical_information: z.string().optional().nullable().describe("Clinical history, symptoms, reason for exam"),
+        clinical_indication: z.string().optional().nullable().describe("Medical indication or reason for the study"),
+        
+        // Technical details
+        technique: z.string().optional().nullable().describe("Technical parameters, contrast used, sequences, etc."),
+        contrast: z.string().optional().nullable().describe("Contrast agent used (if any)"),
+        
+        // Findings - the main content
+        findings: z.string().optional().nullable().describe("Detailed radiological findings and observations"),
+        
+        // Specific anatomical findings
+        bones: z.string().optional().nullable().describe("Bone-related findings"),
+        joints: z.string().optional().nullable().describe("Joint-related findings"),
+        soft_tissues: z.string().optional().nullable().describe("Soft tissue findings"),
+        organs: z.string().optional().nullable().describe("Organ-specific findings"),
+        vessels: z.string().optional().nullable().describe("Vascular findings"),
+        
+        // Measurements
+        measurements: z.string().optional().nullable().describe("Any measurements taken during the study"),
+        dimensions: z.string().optional().nullable().describe("Size measurements of structures or abnormalities"),
+        
+        // Impression/Conclusion
+        impression: z.string().optional().nullable().describe("Radiologist's impression or conclusion"),
+        diagnosis: z.string().optional().nullable().describe("Primary diagnosis or differential diagnoses"),
+        
+        // Recommendations
+        recommendations: z.string().optional().nullable().describe("Follow-up recommendations or additional studies needed"),
+        follow_up: z.string().optional().nullable().describe("Suggested follow-up timeline or actions"),
+        
+        // Comparison
+        comparison: z.string().optional().nullable().describe("Comparison with previous studies"),
+        prior_studies: z.string().optional().nullable().describe("Reference to previous imaging studies"),
+        
+        // Additional fields
+        limitations: z.string().optional().nullable().describe("Study limitations or technical issues"),
+        quality: z.string().optional().nullable().describe("Image quality assessment"),
+        artifacts: z.string().optional().nullable().describe("Imaging artifacts noted"),
+        
+        // Specific findings by system
+        cardiovascular: z.string().optional().nullable().describe("Heart and vascular findings"),
+        pulmonary: z.string().optional().nullable().describe("Lung and respiratory findings"),
+        gastrointestinal: z.string().optional().nullable().describe("GI tract findings"),
+        genitourinary: z.string().optional().nullable().describe("Kidney, bladder, reproductive organ findings"),
+        neurological: z.string().optional().nullable().describe("Brain, spine, nerve findings"),
+        musculoskeletal: z.string().optional().nullable().describe("Bone, joint, muscle findings"),
+        
+        // Severity and urgency
+        severity: z.string().optional().nullable().describe("Severity assessment of findings"),
+        urgency: z.string().optional().nullable().describe("Urgency level or critical findings"),
+        
+        // Additional notes
+        notes: z.string().optional().nullable().describe("Additional notes or comments"),
+        radiologist: z.string().optional().nullable().describe("Reporting radiologist name"),
+    }).describe("Structured imaging report data")
+});
+
+export type ImagingReportType = z.infer<typeof ImagingReportSchema>;
+
+/**
  * HealthCheckup
  * - date, name are optional
  * - test_result is required (an inline object of all fields, each an optional object)

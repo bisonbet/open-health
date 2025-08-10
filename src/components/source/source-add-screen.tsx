@@ -256,15 +256,7 @@ const personalInfoFields = (t: any, top: any): Field[] => {
                 }
             ]
         },
-        {
-            key: 'vitalSigns.bmi',
-            label: 'BMI',
-            type: 'compound',
-            fields: [
-                {key: 'value', type: 'number', placeholder: 'BMI value'},
-                {key: 'unit', type: 'hidden', defaultValue: 'kg/m2'}
-            ]
-        }
+
     ]
 };
 
@@ -613,14 +605,22 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
 
     const allInputsBlurred = Object.values(inputFocusStates).every((isFocused) => !isFocused);
     
+    // Track the last processed healthData to prevent unnecessary updates
+    const lastProcessedHealthDataRef = useRef<string>('');
+    
     // Ensure formData is in sync with healthData when healthData changes
     useEffect(() => {
-        if (healthData?.data && typeof healthData.data === 'object' && JSON.stringify(formData) !== JSON.stringify(healthData.data)) {
-            console.log('[UI] HealthData changed, updating formData from:', JSON.stringify(formData, null, 2));
-            console.log('[UI] HealthData changed, updating formData to:', JSON.stringify(healthData.data, null, 2));
-            setFormData({...(healthData.data as Record<string, any>)});
+        if (healthData?.data && typeof healthData.data === 'object') {
+            const healthDataString = JSON.stringify(healthData.data);
+            
+            // Only update if this is actually new healthData
+            if (healthDataString !== lastProcessedHealthDataRef.current) {
+                console.log('[UI] HealthData changed, updating formData to:', JSON.stringify(healthData.data, null, 2));
+                setFormData({...(healthData.data as Record<string, any>)});
+                lastProcessedHealthDataRef.current = healthDataString;
+            }
         }
-    }, [healthData?.data, healthData?.updatedAt, healthData?.id, formData, setFormData]);
+    }, [healthData?.data, healthData?.updatedAt, healthData?.id, setFormData]);
     
     // Debug logging for Personal Info form data
     useEffect(() => {
@@ -733,30 +733,31 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
         }
     };
 
-    const handleFormChange = (key: string, value: any) => {
-        // Handle nested keys like 'clinical_data.document_type' or 'test_result.pulse.value'
-        if (key.includes('.')) {
-            const keys = key.split('.');
-            const newData = {...formData};
-            let current = newData;
-            
-            // Navigate to the parent object, creating nested objects as needed
-            for (let i = 0; i < keys.length - 1; i++) {
-                if (!current[keys[i]]) {
-                    current[keys[i]] = {};
+    const handleFormChange = useCallback((key: string, value: any) => {
+        setFormData((prevFormData: Record<string, any>) => {
+            // Handle nested keys like 'clinical_data.document_type' or 'test_result.pulse.value'
+            if (key.includes('.')) {
+                const keys = key.split('.');
+                const newData = {...prevFormData};
+                let current = newData;
+                
+                // Navigate to the parent object, creating nested objects as needed
+                for (let i = 0; i < keys.length - 1; i++) {
+                    if (!current[keys[i]]) {
+                        current[keys[i]] = {};
+                    }
+                    current = current[keys[i]];
                 }
-                current = current[keys[i]];
+                
+                // Set the final value
+                current[keys[keys.length - 1]] = value;
+                return newData;
+            } else {
+                // Handle simple keys
+                return {...prevFormData, [key]: value};
             }
-            
-            // Set the final value
-            current[keys[keys.length - 1]] = value;
-            setFormData(newData);
-        } else {
-            // Handle simple keys
-            const newData = {...formData, [key]: value};
-            setFormData(newData);
-        }
-    };
+        });
+    }, [setFormData]);
 
     const handleJSONSave = (newData: Record<string, any>) => {
         setFormData(newData);
@@ -861,7 +862,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                         {(healthData?.type === HealthDataType.PERSONAL_INFO.id || healthData?.type === HealthDataType.SYMPTOMS.id) ? (
                             <div className="p-4">
                                 <DynamicForm
-                                    key={`form-${healthData.id}-${JSON.stringify(formData).length}`}
+                                    key={`form-${healthData.id}`}
                                     fields={getFields()}
                                     data={formData}
                                     onChange={handleFormChange}
@@ -1044,7 +1045,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                                         <div>
                                                             <h4 className="text-sm font-semibold mb-2 text-blue-600">Extracted Vital Signs & Test Results</h4>
                                                             <DynamicForm
-                                                                key={`test-results-${healthData.id}-${JSON.stringify(formData.test_result).length}`}
+                                                                key={`test-results-${healthData.id}`}
                                                                 fields={Object.keys(formData.test_result).map(key => ({
                                                                     key: `test_result.${key}.value`,
                                                                     label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + 
@@ -1061,7 +1062,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                                     <div>
                                                         <h4 className="text-sm font-semibold mb-2 text-green-600">Clinical Information</h4>
                                                         <DynamicForm
-                                                            key={`clinical-form-${healthData.id}-${JSON.stringify(formData).length}`}
+                                                            key={`clinical-form-${healthData.id}`}
                                                             fields={[
                                                                 {key: 'fileName', label: 'File Name', type: 'text'},
                                                                 {key: 'clinical_data.document_type', label: 'Document Type', type: 'text'},
@@ -1088,7 +1089,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                             ) : (
                                                 // Standard form for other documents
                                                 <DynamicForm
-                                                    key={`file-form-${healthData.id}-${JSON.stringify(formData).length}`}
+                                                    key={`file-form-${healthData.id}`}
                                                     fields={[
                                                         {key: 'fileName', label: 'File Name', type: 'text'},
                                                         {key: 'documentType', label: 'Document Type', type: 'text'},
@@ -1478,19 +1479,28 @@ export default function SourceAddScreen() {
     };
 
     const handleDeleteSource = async (id: string) => {
-        await fetch(`/api/health-data/${id}`, {method: 'DELETE'});
-
-        const newSources = healthDataList?.healthDataList.filter(s => s.id !== id) || [];
-        await mutate({healthDataList: newSources});
-
-        if (selectedId === id) {
-            if (newSources.length > 0) {
-                setSelectedId(newSources[0].id);
-                setFormData(newSources[0].data as Record<string, any>);
-            } else {
-                setSelectedId(null);
-                setFormData({})
+        try {
+            const response = await fetch(`/api/health-data/${id}`, {method: 'DELETE'});
+            
+            if (!response.ok) {
+                console.error('Failed to delete health data:', response.status);
+                return;
             }
+
+            const newSources = healthDataList?.healthDataList.filter(s => s.id !== id) || [];
+            await mutate({healthDataList: newSources});
+
+            if (selectedId === id) {
+                if (newSources.length > 0) {
+                    setSelectedId(newSources[0].id);
+                    setFormData(newSources[0].data as Record<string, any>);
+                } else {
+                    setSelectedId(null);
+                    setFormData({})
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting health data:', error);
         }
     };
 
@@ -1516,18 +1526,37 @@ export default function SourceAddScreen() {
     const onChangeFormData = async (data: Record<string, any>) => {
         if (selectedId) {
             setFormData(data);
-            await fetch(`/api/health-data/${selectedId}`, {
-                method: 'PATCH',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({data: data})
-            });
-            await mutate({
-                healthDataList: healthDataList?.healthDataList?.map(s =>
-                    s.id === selectedId
-                        ? {...s, data: data}
-                        : s
-                ) || []
-            });
+            
+            try {
+                const response = await fetch(`/api/health-data/${selectedId}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({data: data})
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        // Record was deleted, clear selection
+                        console.warn('Attempted to update deleted record, clearing selection');
+                        setSelectedId(null);
+                        setFormData({});
+                        await mutate();
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                await mutate({
+                    healthDataList: healthDataList?.healthDataList?.map(s =>
+                        s.id === selectedId
+                            ? {...s, data: data}
+                            : s
+                    ) || []
+                });
+            } catch (error) {
+                console.error('Failed to update health data:', error);
+                // Optionally show user feedback here
+            }
         }
     };
 

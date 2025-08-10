@@ -7,8 +7,8 @@ import {
   DocumentParserModel,
   OCRParseResult,
 } from "@/lib/health-data/parser/document/base-document";
-import fetch from "node-fetch";
-import FormData from "form-data";
+
+// Using native FormData
 import fs from "fs";
 import { currentDeploymentEnv } from "@/lib/current-deployment-env";
 
@@ -124,7 +124,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
     toFormat: "json" | "md"
   ): Promise<{ document: { json_content?: DoclingJsonContent; md_content?: string } }> {
     // 1. Get file data
-    let fileData: Buffer | fs.ReadStream;
+    let fileData: Buffer;
     const fileName = "defaultfile.pdf"; // Or derive from path
 
     if (inputPath.startsWith("http://") || inputPath.startsWith("https://")) {
@@ -135,7 +135,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
           `Failed to download remote file: ${inputPath}. Status: ${fileResponse.status}`
         );
       }
-      fileData = await fileResponse.buffer();
+      fileData = Buffer.from(await fileResponse.arrayBuffer());
       console.log(`[Docling] Download complete. Size: ${fileData.length} bytes.`);
     } else {
       if (!fs.existsSync(inputPath)) {
@@ -143,7 +143,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       }
       const stats = fs.statSync(inputPath);
       console.log(`[Docling] Local file found. Size: ${stats.size} bytes.`);
-      fileData = fs.createReadStream(inputPath);
+      fileData = fs.readFileSync(inputPath);
     }
 
     // 2. Build form data
@@ -158,7 +158,8 @@ export class DoclingDocumentParser extends BaseDocumentParser {
     formData.append("ocr_dpi", DOCLING_PARAMS.OCR_DPI);
     formData.append("ocr_preprocessing", DOCLING_PARAMS.OCR_PREPROCESSING);
     formData.append("table_mode", DOCLING_PARAMS.TABLE_MODE);
-    formData.append("files", fileData, fileName);
+    const fileBlob = new Blob([new Uint8Array(fileData)]);
+    formData.append("files", fileBlob, fileName);
     formData.append("abort_on_error", DOCLING_PARAMS.ABORT_ON_ERROR);
     formData.append("to_formats", toFormat);
     formData.append("return_as_file", DOCLING_PARAMS.RETURN_AS_FILE);
@@ -168,7 +169,6 @@ export class DoclingDocumentParser extends BaseDocumentParser {
     const response = await fetch(`${this.doclingUrl}/v1alpha/convert/file`, {
       method: "POST",
       headers: {
-        ...formData.getHeaders(),
         Accept: "application/json",
       },
       body: formData,
@@ -217,7 +217,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       console.log("[Docling] Starting parse method...");
       const inputPath = options.input;
 
-      let fileData: Buffer | fs.ReadStream;
+      let fileData: Buffer;
       const fileName = "defaultfile.pdf";
 
       if (inputPath.startsWith("http://") || inputPath.startsWith("https://")) {
@@ -228,7 +228,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
             `Failed to download remote file: ${inputPath}. Status: ${fileResponse.status}`
           );
         }
-        fileData = await fileResponse.buffer();
+        fileData = Buffer.from(await fileResponse.arrayBuffer());
         console.log(`[Docling] Download complete. Size: ${fileData.length} bytes.`);
       } else {
         if (!fs.existsSync(inputPath)) {
@@ -236,7 +236,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
         }
         const stats = fs.statSync(inputPath);
         console.log(`[Docling] Local file found. Size: ${stats.size} bytes.`);
-        fileData = fs.createReadStream(inputPath);
+        fileData = fs.readFileSync(inputPath);
       }
 
       // Build the multipart form data
@@ -253,7 +253,8 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       formData.append("ocr_dpi", "300");  // Increase DPI for better quality
       formData.append("ocr_preprocessing", "true");  // Enable image preprocessing
       formData.append("table_mode", "accurate");
-      formData.append("files", fileData, fileName);
+      const fileBlob = new Blob([new Uint8Array(fileData)]);
+      formData.append("files", fileBlob, fileName);
       formData.append("abort_on_error", "false");
       formData.append("to_formats", "md");
       formData.append("return_as_file", "false");
@@ -263,7 +264,6 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       const response = await fetch(`${this.doclingUrl}/v1alpha/convert/file`, {
         method: "POST",
         headers: {
-          ...formData.getHeaders(),
           Accept: "application/json",
         },
         body: formData,

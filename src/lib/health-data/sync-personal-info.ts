@@ -4,6 +4,7 @@
  */
 
 import prisma from "@/lib/prisma";
+import { calculateBMI } from "@/lib/utils/bmi-calculator";
 
 interface TestResult {
   value?: string | null;
@@ -115,15 +116,24 @@ export async function syncVitalSignsToPersonalInfo(
     currentData.vitalSigns = {};
   }
 
-  // Update BMI
-  if (testResult.bmi?.value) {
-    currentData.vitalSigns.bmi = {
-      value: testResult.bmi.value,
-      unit: testResult.bmi.unit || 'kg/m2',
-      lastUpdated: new Date().toISOString()
-    };
-    hasUpdates = true;
-    console.log(`[Sync] Updated BMI: ${testResult.bmi.value}`);
+  // Calculate BMI automatically from height and weight (don't import BMI from test results)
+  if (currentData.height && currentData.weight) {
+    const calculatedBMI = calculateBMI(
+      currentData.height.value,
+      currentData.height.unit,
+      currentData.weight.value,
+      currentData.weight.unit
+    );
+    
+    if (calculatedBMI !== null) {
+      currentData.vitalSigns.bmi = {
+        value: calculatedBMI.toString(),
+        unit: 'kg/m2',
+        lastUpdated: new Date().toISOString()
+      };
+      hasUpdates = true;
+      console.log(`[Sync] Calculated BMI: ${calculatedBMI} kg/m2`);
+    }
   }
 
   // Update pulse

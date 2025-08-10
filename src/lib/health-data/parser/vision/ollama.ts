@@ -4,7 +4,7 @@ import {
     VisionParseOptions,
     VisionParserModel
 } from "@/lib/health-data/parser/vision/base-vision";
-import fetch from 'node-fetch'
+
 import {HealthCheckupSchema, HealthCheckupType} from "@/lib/health-data/parser/schema";
 import {ChatOllama} from "@langchain/ollama";
 import {ChatPromptTemplate} from "@langchain/core/prompts";
