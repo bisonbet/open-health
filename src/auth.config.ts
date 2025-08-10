@@ -14,7 +14,6 @@ export const authConfig = {
         },
     },
     providers: [],
-    // Specify that this should run in Node.js runtime, not Edge
     trustHost: true,
 } satisfies NextAuthConfig;
 

@@ -8,6 +8,7 @@ import {auth} from "@/auth";
 import {put} from "@vercel/blob";
 import {currentDeploymentEnv} from "@/lib/current-deployment-env";
 import fs from 'fs'
+import {syncVitalSignsToPersonalInfo} from "@/lib/health-data/sync-personal-info";
 
 export const runtime = 'nodejs';
 
@@ -96,8 +97,10 @@ export async function POST(
                 const outputBuffer = await sharp(fileBuffer).png().toBuffer()
                 const filename = `${fileHash}.png`;
                 if (currentDeploymentEnv === 'local') {
-                    fs.writeFileSync(`./public/uploads/${filename}`, outputBuffer)
-                    filePath = `${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${filename}`
+                    const localFilePath = `./public/uploads/${filename}`;
+                    fs.writeFileSync(localFilePath, outputBuffer)
+                    // Store public URL for frontend, but we'll use local path for processing
+                    filePath = `${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${filename}`;
                 } else {
                     const blob = await put(`/uploads/${filename}`, outputBuffer, {
                         access: 'public',
@@ -111,8 +114,10 @@ export async function POST(
                 if (currentDeploymentEnv === 'local') {
                     const extension = file.name.split('.').pop()
                     const filename = `${fileHash}.${extension}`;
-                    fs.writeFileSync(`./public/uploads/${filename}`, fileBuffer)
-                    filePath = `${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${filename}`
+                    const localFilePath = `./public/uploads/${filename}`;
+                    fs.writeFileSync(localFilePath, fileBuffer)
+                    // Store public URL for frontend, but we'll use local path for processing
+                    filePath = `${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${filename}`;
                 } else {
                     const extension = file.name.split('.').pop()
                     const filename = `${fileHash}.${extension}`;
@@ -167,6 +172,16 @@ export async function POST(
                     data: {...baseData, ...data[0]}
                 }
             });
+
+            // Sync vital signs to personal info
+            try {
+                if (session.user.id) {
+                    await syncVitalSignsToPersonalInfo(session.user.id, data[0]);
+                }
+            } catch (syncError) {
+                console.error('Error syncing vital signs to personal info:', syncError);
+                // Don't fail the whole process if sync fails
+            }
             return NextResponse.json(healthData);
         } catch (error) {
             console.error('Error processing file:', error);

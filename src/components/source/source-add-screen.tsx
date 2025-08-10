@@ -209,7 +209,62 @@ const personalInfoFields = (t: any, top: any): Field[] => {
             showWhen: (formData: Record<string, any>) => formData.alcoholHistory === 'current'
         },
         {key: 'familyHistory', label: t('familyHistory'), type: 'textarea'},
-        {key: 'medicalHistory', label: t('medicalHistory'), type: 'textarea'}
+        {key: 'medicalHistory', label: t('medicalHistory'), type: 'textarea'},
+        
+        // Vital Signs Section
+        {
+            key: 'vitalSigns.pulse',
+            label: 'Pulse (bpm)',
+            type: 'compound',
+            fields: [
+                {key: 'value', type: 'number', placeholder: 'Pulse rate'},
+                {key: 'unit', type: 'hidden', defaultValue: 'bpm'}
+            ]
+        },
+        {
+            key: 'vitalSigns.bloodPressure',
+            label: 'Blood Pressure',
+            type: 'compound',
+            fields: [
+                {key: 'value', type: 'text', placeholder: '120/80'},
+                {key: 'unit', type: 'hidden', defaultValue: 'mmHg'}
+            ]
+        },
+        {
+            key: 'vitalSigns.oxygenSaturation',
+            label: 'Oxygen Saturation (%)',
+            type: 'compound',
+            fields: [
+                {key: 'value', type: 'number', placeholder: 'Oxygen level'},
+                {key: 'unit', type: 'hidden', defaultValue: '%'}
+            ]
+        },
+        {
+            key: 'vitalSigns.bodyTemperature',
+            label: 'Body Temperature',
+            type: 'compound',
+            fields: [
+                {key: 'value', type: 'number', placeholder: 'Temperature'},
+                {
+                    key: 'unit',
+                    type: 'select',
+                    options: [
+                        {value: '°C', label: '°C'},
+                        {value: '°F', label: '°F'}
+                    ],
+                    defaultValue: '°C'
+                }
+            ]
+        },
+        {
+            key: 'vitalSigns.bmi',
+            label: 'BMI',
+            type: 'compound',
+            fields: [
+                {key: 'value', type: 'number', placeholder: 'BMI value'},
+                {key: 'unit', type: 'hidden', defaultValue: 'kg/m2'}
+            ]
+        }
     ]
 };
 
@@ -423,6 +478,9 @@ const AddSourceDialog: React.FC<AddSourceDialogProps> = ({
 
 const HealthDataItem: React.FC<HealthDataItemProps> = ({healthData, isSelected, onClick, onDelete}) => {
     const t = useTranslations('SourceManagement')
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    
+    console.log('[DEBUG] HealthDataItem rendered:', healthData.type, healthData.id, 'selected:', isSelected);
 
     const getIcon = (type: string) => {
         switch (type) {
@@ -462,7 +520,10 @@ const HealthDataItem: React.FC<HealthDataItemProps> = ({healthData, isSelected, 
 ${isSelected
                 ? 'text-primary text-base font-semibold bg-primary/5'
                 : 'text-sm hover:bg-accent hover:text-accent-foreground'}`}
-            onClick={onClick}
+            onClick={(e) => {
+                console.log('[DEBUG] HealthDataItem clicked:', healthData.type, healthData.id);
+                onClick();
+            }}
         >
             <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div className="flex-shrink-0">
@@ -474,15 +535,45 @@ ${isSelected
                 {healthData.status === 'PARSING' && (
                     <Loader2 className="h-5 w-5 animate-spin"/>
                 )}
-                <Button
-                    variant="ghost"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(healthData.id);
-                    }}
-                >
-                    <Trash2 className="h-5 w-5"/>
-                </Button>
+                <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                    <DialogTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                            }}
+                        >
+                            <Trash2 className="h-5 w-5"/>
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Confirm Deletion</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <p className="text-sm">
+                                Are you sure you want to delete &ldquo;{getName(healthData.type)}&rdquo;? This action cannot be undone.
+                            </p>
+                            <div className="flex justify-end gap-2">
+                                <Button 
+                                    variant="outline" 
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    variant="destructive" 
+                                    onClick={() => {
+                                        onDelete(healthData.id);
+                                        setShowDeleteConfirm(false);
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         </div>
     );
@@ -521,6 +612,23 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
     const [dataPerPage, setDataPerPage] = useState(sourceDataPerPage)
 
     const allInputsBlurred = Object.values(inputFocusStates).every((isFocused) => !isFocused);
+    
+    // Ensure formData is in sync with healthData when healthData changes
+    useEffect(() => {
+        if (healthData?.data && typeof healthData.data === 'object' && JSON.stringify(formData) !== JSON.stringify(healthData.data)) {
+            console.log('[UI] HealthData changed, updating formData from:', JSON.stringify(formData, null, 2));
+            console.log('[UI] HealthData changed, updating formData to:', JSON.stringify(healthData.data, null, 2));
+            setFormData({...(healthData.data as Record<string, any>)});
+        }
+    }, [healthData?.data, healthData?.updatedAt, healthData?.id, formData, setFormData]);
+    
+    // Debug logging for Personal Info form data
+    useEffect(() => {
+        if (healthData?.type === HealthDataType.PERSONAL_INFO.id) {
+            console.log('[UI] Personal Info form data changed:', JSON.stringify(formData, null, 2));
+            console.log('[UI] Current selected health data:', healthData?.id, healthData?.updatedAt);
+        }
+    }, [formData, healthData?.type, healthData?.id, healthData?.updatedAt]);
 
     const handleFocus = (name: string) => {
         setFocusedItem(name);
@@ -626,8 +734,28 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
     };
 
     const handleFormChange = (key: string, value: any) => {
-        const newData = {...formData, [key]: value};
-        setFormData(newData);
+        // Handle nested keys like 'clinical_data.document_type' or 'test_result.pulse.value'
+        if (key.includes('.')) {
+            const keys = key.split('.');
+            const newData = {...formData};
+            let current = newData;
+            
+            // Navigate to the parent object, creating nested objects as needed
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!current[keys[i]]) {
+                    current[keys[i]] = {};
+                }
+                current = current[keys[i]];
+            }
+            
+            // Set the final value
+            current[keys[keys.length - 1]] = value;
+            setFormData(newData);
+        } else {
+            // Handle simple keys
+            const newData = {...formData, [key]: value};
+            setFormData(newData);
+        }
     };
 
     const handleJSONSave = (newData: Record<string, any>) => {
@@ -733,16 +861,20 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                         {(healthData?.type === HealthDataType.PERSONAL_INFO.id || healthData?.type === HealthDataType.SYMPTOMS.id) ? (
                             <div className="p-4">
                                 <DynamicForm
+                                    key={`form-${healthData.id}-${JSON.stringify(formData).length}`}
                                     fields={getFields()}
                                     data={formData}
                                     onChange={handleFormChange}
                                 />
                             </div>
                         ) : healthData?.type === HealthDataType.FILE.id ? (
-                            healthData?.fileType?.includes('image') && healthData?.filePath ? (
+                            (() => {
+                                console.log('[UI] FILE selected - data:', healthData?.data, 'fileType:', healthData?.fileType);
+                                return healthData?.fileType?.includes('image') && healthData?.filePath;
+                            })() ? (
                                 <div className="p-4">
                                     <Image
-                                        src={healthData.filePath}
+                                        src={healthData.filePath!}
                                         alt="Preview"
                                         className="w-full h-auto"
                                         width={800}
@@ -753,45 +885,55 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                 </div>
                             ) : (
                                 <div className="bg-background p-4 rounded-lg relative flex flex-row h-full">
-                                    <div id="pdf" className="w-[60%] overflow-y-auto h-full">
-                                        <Document file={healthData.filePath}
-                                                  className="w-full"
-                                                  onLoadSuccess={onDocumentLoadSuccess}>
-                                            {Array.from(new Array(numPages), (_, index) => {
-                                                return (
-                                                    <Page
-                                                        className={cn(
-                                                            'w-full',
-                                                            {hidden: index + 1 !== page}
-                                                        )}
-                                                        key={`page_${index + 1}`}
-                                                        pageNumber={index + 1}
-                                                        renderAnnotationLayer={false}
-                                                        renderTextLayer={false}
-                                                    />
-                                                );
-                                            })}
-                                        </Document>
-                                        <div
-                                            className="relative w-fit bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 bg-background p-2 rounded shadow">
-                                            <button
-                                                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                                                disabled={page <= 1}
-                                            >
-                                                <FaChevronLeft/>
-                                            </button>
-                                            <span className="text-foreground">{page} / {numPages}</span>
-                                            <button
-                                                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                onClick={() => setPage((prev) => Math.min(prev + 1, numPages))}
-                                                disabled={page >= numPages}
-                                            >
-                                                <FaChevronRight/>
-                                            </button>
+                                    {healthData?.fileType?.includes('pdf') ? (
+                                        <div id="pdf" className="w-[60%] overflow-y-auto h-full">
+                                            <Document file={healthData.filePath}
+                                                      className="w-full"
+                                                      onLoadSuccess={onDocumentLoadSuccess}>
+                                                {Array.from(new Array(numPages), (_, index) => {
+                                                    return (
+                                                        <Page
+                                                            className={cn(
+                                                                'w-full',
+                                                                {hidden: index + 1 !== page}
+                                                            )}
+                                                            key={`page_${index + 1}`}
+                                                            pageNumber={index + 1}
+                                                            renderAnnotationLayer={false}
+                                                            renderTextLayer={false}
+                                                        />
+                                                    );
+                                                })}
+                                            </Document>
+                                            <div
+                                                className="relative w-fit bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-4 bg-background p-2 rounded shadow">
+                                                <button
+                                                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                    onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                                                    disabled={page <= 1}
+                                                >
+                                                    <FaChevronLeft/>
+                                                </button>
+                                                <span className="text-foreground">{page} / {numPages}</span>
+                                                <button
+                                                    className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                    onClick={() => setPage((prev) => Math.min(prev + 1, numPages))}
+                                                    disabled={page >= numPages}
+                                                >
+                                                    <FaChevronRight/>
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    {userBloodTestResults?.test_result && <div
+                                    ) : (
+                                        <div className="w-[60%] overflow-y-auto h-full flex items-center justify-center">
+                                            <div className="text-center text-muted-foreground">
+                                                <FileText className="h-16 w-16 mx-auto mb-4" />
+                                                <p className="text-sm">Document preview not available</p>
+                                                <p className="text-xs">File type: {healthData?.fileType || 'Unknown'}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {userBloodTestResults?.test_result ? <div
                                         id="test-result"
                                         className="w-[40%] overflow-y-auto p-4">
                                         {sortedPageTestResults.map((item) =>
@@ -874,6 +1016,100 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
                                                 </button>
                                             </div>
                                         }
+                                    </div> : 
+                                    <div className="w-[40%] overflow-y-auto p-4">
+                                        <h3 className="text-sm font-medium mb-4">Extracted Data</h3>
+                                        <div className="mb-2 text-xs text-green-600 bg-green-50 p-2 rounded">
+                                            Clinical document detected - showing clinical form
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div className="mb-2 text-xs text-muted-foreground bg-yellow-100 p-2 rounded">
+                                                <div>Debug: {formData.clinical_data ? 'Clinical data found' : 'No clinical data'}</div>
+                                                <div>Form data keys: {Object.keys(formData).join(', ')}</div>
+                                                <div>Has test_result: {formData.test_result ? 'Yes' : 'No'}</div>
+                                                <div>Test result keys: {formData.test_result ? Object.keys(formData.test_result).join(', ') : 'None'}</div>
+                                            </div>
+                                            
+                                            {(() => {
+                                                const hasVitalSigns = formData.test_result && Object.keys(formData.test_result).length > 0;
+                                                const isClinicalDoc = formData.fileName?.toLowerCase().includes('clinical') || 
+                                                                     formData.fileName?.toLowerCase().includes('ambulatory');
+                                                console.log('[UI] Form render check:', {hasVitalSigns, isClinicalDoc, formData});
+                                                return hasVitalSigns || isClinicalDoc;
+                                            })() ? (
+                                                // Show combined form for medical documents with extracted data
+                                                <div className="space-y-6">
+                                                    {/* Vital Signs / Test Results Section */}
+                                                    {formData.test_result && Object.keys(formData.test_result).length > 0 && (
+                                                        <div>
+                                                            <h4 className="text-sm font-semibold mb-2 text-blue-600">Extracted Vital Signs & Test Results</h4>
+                                                            <DynamicForm
+                                                                key={`test-results-${healthData.id}-${JSON.stringify(formData.test_result).length}`}
+                                                                fields={Object.keys(formData.test_result).map(key => ({
+                                                                    key: `test_result.${key}.value`,
+                                                                    label: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + 
+                                                                           (formData.test_result[key]?.unit ? ` (${formData.test_result[key].unit})` : ''),
+                                                                    type: 'text'
+                                                                }))}
+                                                                data={formData}
+                                                                onChange={handleFormChange}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {/* Clinical Data Section */}
+                                                    <div>
+                                                        <h4 className="text-sm font-semibold mb-2 text-green-600">Clinical Information</h4>
+                                                        <DynamicForm
+                                                            key={`clinical-form-${healthData.id}-${JSON.stringify(formData).length}`}
+                                                            fields={[
+                                                                {key: 'fileName', label: 'File Name', type: 'text'},
+                                                                {key: 'clinical_data.document_type', label: 'Document Type', type: 'text'},
+                                                                {key: 'clinical_data.patient_name', label: 'Patient Name', type: 'text'},
+                                                                {key: 'clinical_data.provider_name', label: 'Provider', type: 'text'},
+                                                                {key: 'clinical_data.institution', label: 'Institution', type: 'text'},
+                                                                {key: 'clinical_data.visit_date', label: 'Visit Date', type: 'date'},
+                                                                {key: 'clinical_data.chief_complaint', label: 'Chief Complaint', type: 'textarea'},
+                                                                {key: 'clinical_data.assessment', label: 'Assessment', type: 'textarea'},
+                                                                {key: 'clinical_data.diagnosis', label: 'Diagnosis', type: 'textarea'},
+                                                                {key: 'clinical_data.treatment_plan', label: 'Treatment Plan', type: 'textarea'},
+                                                                {key: 'clinical_data.medications', label: 'Medications', type: 'textarea'},
+                                                                {key: 'clinical_data.follow_up', label: 'Follow-up', type: 'textarea'},
+                                                                {key: 'clinical_data.physical_examination', label: 'Physical Exam', type: 'textarea'},
+                                                                {key: 'clinical_data.imaging_findings', label: 'Imaging Findings', type: 'textarea'},
+                                                                {key: 'clinical_data.clinical_notes', label: 'Clinical Notes', type: 'textarea'},
+                                                                {key: 'clinical_data.summary', label: 'Summary', type: 'textarea'}
+                                                            ]}
+                                                            data={formData}
+                                                            onChange={handleFormChange}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                // Standard form for other documents
+                                                <DynamicForm
+                                                    key={`file-form-${healthData.id}-${JSON.stringify(formData).length}`}
+                                                    fields={[
+                                                        {key: 'fileName', label: 'File Name', type: 'text'},
+                                                        {key: 'documentType', label: 'Document Type', type: 'text'},
+                                                        {key: 'summary', label: 'Summary', type: 'textarea'},
+                                                        {key: 'extractedText', label: 'Extracted Text', type: 'textarea'},
+                                                        {key: 'keyFindings', label: 'Key Findings', type: 'textarea'},
+                                                        // Show any other extracted fields dynamically
+                                                        ...Object.keys(formData).filter(key => 
+                                                            !['fileName', 'documentType', 'summary', 'extractedText', 'keyFindings', 'test_result', 'clinical_data'].includes(key) &&
+                                                            formData[key] !== null && formData[key] !== undefined
+                                                        ).map(key => ({
+                                                            key,
+                                                            label: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+                                                            type: typeof formData[key] === 'string' && formData[key].length > 50 ? 'textarea' : 'text'
+                                                        }))
+                                                    ]}
+                                                    data={formData}
+                                                    onChange={handleFormChange}
+                                                />
+                                            )}
+                                        </div>
                                     </div>}
                                 </div>
                             )
@@ -1030,6 +1266,7 @@ const HealthDataPreview = ({healthData, formData, setFormData, setHealthData}: H
 };
 
 export default function SourceAddScreen() {
+    console.log('[DEBUG] SourceAddScreen component loaded');
     const t = useTranslations('SourceManagement')
 
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1051,6 +1288,8 @@ export default function SourceAddScreen() {
         '/api/health-data',
         (url: string) => fetch(url).then((res) => res.json()),
     );
+    
+    console.log('[DEBUG] healthDataList:', healthDataList?.healthDataList?.length, 'items');
 
     const {data: visionDataList} = useSWR<HealthDataParserVisionListResponse>(
         '/api/health-data-parser/visions',
@@ -1149,7 +1388,27 @@ export default function SourceAddScreen() {
                                 } else if (statusData.status === 'COMPLETED') {
                                     console.log('Parsing completed successfully:', statusData);
                                 }
+                                
+                                // Refresh the health data list to include any synced personal info updates
                                 await mutate();
+                                
+                                // Check if user currently has Personal Info selected before changing selection
+                                const currentSelectedItem = healthDataList?.healthDataList?.find(item => item.id === selectedId);
+                                const wasPersonalInfoSelected = currentSelectedItem?.type === HealthDataType.PERSONAL_INFO.id;
+                                
+                                if (wasPersonalInfoSelected) {
+                                    // If Personal Info was selected, refresh it with the latest synced data
+                                    const refreshedData = await fetch('/api/health-data').then(res => res.json());
+                                    const personalInfo = refreshedData.healthDataList?.find((item: any) => item.type === 'PERSONAL_INFO');
+                                    if (personalInfo) {
+                                        console.log('Refreshing Personal Info with synced data:', personalInfo.data);
+                                        setFormData(personalInfo.data as Record<string, any>);
+                                        // Keep Personal Info selected instead of switching to the new file
+                                        return; // Don't change selection to the new file
+                                    }
+                                }
+                                
+                                // Only switch to the new file if Personal Info wasn't selected
                                 setSelectedId(data.id);
                                 setFormData(statusData.data as Record<string, any>);
                             }
@@ -1373,9 +1632,44 @@ export default function SourceAddScreen() {
                                     healthData={item}
                                     isSelected={selectedId === item.id}
                                     onClick={() => {
+                                        console.log('[UI] Item clicked:', item.type, item.id);
                                         if (item.status === 'PARSING') return;
-                                        setSelectedId(item.id)
-                                        setFormData(item.data as Record<string, any>)
+                                        
+                                        setSelectedId(item.id);
+                                        
+                                        // If selecting Personal Info, always fetch the latest data
+                                        if (item.type === HealthDataType.PERSONAL_INFO.id) {
+                                            console.log('[UI] Personal Info clicked, fetching latest data...');
+                                            
+                                            // Use async operation but don't block the UI
+                                            fetch('/api/health-data')
+                                                .then(response => response.json())
+                                                .then(refreshedData => {
+                                                    console.log('[UI] All health data received:', refreshedData);
+                                                    const latestPersonalInfo = refreshedData.healthDataList?.find((healthItem: any) => healthItem.type === 'PERSONAL_INFO');
+                                                    if (latestPersonalInfo) {
+                                                        console.log('[UI] Found latest Personal Info:', latestPersonalInfo);
+                                                        console.log('[UI] Personal Info data structure:', JSON.stringify(latestPersonalInfo.data, null, 2));
+                                                        console.log('[UI] About to call setFormData with:', latestPersonalInfo.data);
+                                                        // Force a new object reference to trigger re-render
+                                                        setFormData({...(latestPersonalInfo.data as Record<string, any>)});
+                                                        console.log('[UI] setFormData called successfully');
+                                                        
+                                                        // Also update the healthDataList cache to keep it in sync
+                                                        mutate();
+                                                    } else {
+                                                        console.log('[UI] No Personal Info found, using item data:', item.data);
+                                                        setFormData({...(item.data as Record<string, any>)});
+                                                    }
+                                                })
+                                                .catch(error => {
+                                                    console.error('[UI] Failed to fetch latest Personal Info:', error);
+                                                    setFormData({...(item.data as Record<string, any>)});
+                                                });
+                                        } else {
+                                            console.log('[UI] Non-Personal Info selected, using item data');
+                                            setFormData({...(item.data as Record<string, any>)});
+                                        }
                                     }}
                                     onDelete={handleDeleteSource}
                                 />

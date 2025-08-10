@@ -15,6 +15,7 @@ import { tasks } from "@trigger.dev/sdk/v3";
 import type { pdfToImages } from "@/trigger/pdf-to-image";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { enhanceVitalSigns } from "@/lib/health-data/parser/vital-signs-enhancer";
 
 const execPromise = promisify(exec);
 
@@ -43,6 +44,7 @@ interface InferenceOptions {
   excludeText: boolean;
   visionParser: VisionParserOptions;
   documentParser: DocumentParserOptions;
+  useClinicalPrompts?: boolean;
 }
 
 interface TestResult {
@@ -96,6 +98,39 @@ async function documentParse({
   return result;
 }
 
+/**
+ * Detect if a document is primarily clinical narrative vs lab results
+ * @param ocrText - OCR extracted text from the document
+ * @returns boolean - true if document appears to be clinical narrative
+ */
+function isClinicalDocument(ocrText: string): boolean {
+  const clinicalKeywords = [
+    'consultation', 'visit', 'examination', 'assessment', 'diagnosis', 'treatment', 'plan',
+    'chief complaint', 'history of present illness', 'physical exam', 'impression',
+    'discharge', 'admit', 'recommendation', 'follow-up', 'continue', 'discontinue',
+    'medication', 'prescription', 'instructions', 'clinic', 'appointment',
+    'symptoms', 'patient reports', 'on examination', 'findings', 'appears',
+    'imaging', 'x-ray', 'ct scan', 'mri', 'ultrasound', 'ecg', 'ekg',
+    'provider', 'physician', 'doctor', 'nurse', 'clinician'
+  ];
+
+  const labKeywords = [
+    'result', 'value', 'reference', 'range', 'normal', 'abnormal', 'high', 'low',
+    'mg/dl', 'mmol/l', 'g/dl', 'mcg', 'ng/ml', 'iu/l', 'u/l',
+    'complete blood count', 'cbc', 'basic metabolic', 'comprehensive metabolic',
+    'lipid panel', 'thyroid', 'glucose', 'hemoglobin', 'hematocrit',
+    'cholesterol', 'triglycerides', 'creatinine', 'bun'
+  ];
+
+  const text = ocrText.toLowerCase();
+  const clinicalScore = clinicalKeywords.filter(keyword => text.includes(keyword)).length;
+  const labScore = labKeywords.filter(keyword => text.includes(keyword)).length;
+
+  // If we have more clinical keywords than lab keywords, treat as clinical document
+  // Also treat as clinical if we have significant clinical content even with some lab content
+  return clinicalScore > labScore || clinicalScore >= 3;
+}
+
 async function inference(inferenceOptions: InferenceOptions) {
   const {
     imagePaths,
@@ -103,6 +138,7 @@ async function inference(inferenceOptions: InferenceOptions) {
     excludeText,
     visionParser: visionParserOptions,
     documentParser: documentParserOptions,
+    useClinicalPrompts = false,
   } = inferenceOptions;
 
   // Extract text data if not excluding text
@@ -125,8 +161,15 @@ async function inference(inferenceOptions: InferenceOptions) {
     ? await processBatchWithConcurrency(
         imagePaths,
         async (path) => {
-          const fileResponse = await fetch(path);
-          const buffer = Buffer.from(await fileResponse.arrayBuffer());
+          let buffer: Buffer;
+          if (path.startsWith("http://") || path.startsWith("https://")) {
+            // Handle remote URLs
+            const fileResponse = await fetch(path);
+            buffer = Buffer.from(await fileResponse.arrayBuffer());
+          } else {
+            // Handle local file paths
+            buffer = fs.readFileSync(path);
+          }
           return `data:image/png;base64,${buffer.toString("base64")}`;
         },
         4
@@ -141,7 +184,7 @@ async function inference(inferenceOptions: InferenceOptions) {
   }));
 
   // Generate Messages
-  const messages = ChatPromptTemplate.fromMessages(getParsePrompt({ excludeImage, excludeText }));
+  const messages = ChatPromptTemplate.fromMessages(getParsePrompt({ excludeImage, excludeText, useClinicalPrompts }));
 
   // Select Vision Parser
   const visionParser = visions.find((e) => e.name === visionParserOptions.parser);
@@ -239,8 +282,16 @@ async function inference(inferenceOptions: InferenceOptions) {
  * @returns {Promise<string[]>} - List of image paths
  */
 async function documentToImages({ file: filePath }: Pick<SourceParseOptions, "file">): Promise<string[]> {
-  const fileResponse = await fetch(filePath);
-  const fileBuffer = Buffer.from(await fileResponse.arrayBuffer());
+  let fileBuffer: Buffer;
+  
+  if (filePath.startsWith("http://") || filePath.startsWith("https://")) {
+    // Handle remote URLs
+    const fileResponse = await fetch(filePath);
+    fileBuffer = Buffer.from(await fileResponse.arrayBuffer());
+  } else {
+    // Handle local file paths
+    fileBuffer = fs.readFileSync(filePath);
+  }
   const result = await fileTypeFromBuffer(fileBuffer);
   const fileHash = await getFileMd5(fileBuffer);
   if (!result) throw new Error("Invalid file type");
@@ -303,8 +354,9 @@ async function documentToImages({ file: filePath }: Pick<SourceParseOptions, "fi
   const imagePaths = [];
   for (let i = 0; i < images.length; i++) {
     if (currentDeploymentEnv === "local") {
-      fs.writeFileSync(`./public/uploads/${fileHash}_${i}.png`, Buffer.from(images[i].split(",")[1], "base64"));
-      imagePaths.push(`${process.env.NEXT_PUBLIC_URL}/api/static/uploads/${fileHash}_${i}.png`);
+      const localImagePath = `./public/uploads/${fileHash}_${i}.png`;
+      fs.writeFileSync(localImagePath, Buffer.from(images[i].split(",")[1], "base64"));
+      imagePaths.push(localImagePath);
     } else {
       const blob = await put(
         `/uploads/${fileHash}_${i}.png`,
@@ -324,7 +376,13 @@ async function documentToImages({ file: filePath }: Pick<SourceParseOptions, "fi
  * @param options
  */
 export async function parseHealthData(options: SourceParseOptions) {
-  const { file: filePath } = options;
+  let { file: filePath } = options;
+  
+  // Convert public URL to local path for processing in local environment
+  if (currentDeploymentEnv === "local" && filePath.includes("/api/static/uploads/")) {
+    const filename = filePath.split("/").pop();
+    filePath = `./public/uploads/${filename}`;
+  }
 
   // VisionParser
   const visionParser =
@@ -351,6 +409,13 @@ export async function parseHealthData(options: SourceParseOptions) {
     documentParser: documentParser,
   });
 
+  // Detect document type using OCR text
+  const ocrText = (ocrResults as { text?: string })?.text || "";
+  const useClinicalPrompts = isClinicalDocument(ocrText);
+  
+  console.log(`Document type detection: ${useClinicalPrompts ? 'Clinical' : 'Lab'} document`);
+  console.log(`OCR keywords found in: ${ocrText.substring(0, 200)}...`);
+
   // Prepare parse results
   await processBatchWithConcurrency(
     imagePaths,
@@ -358,8 +423,8 @@ export async function parseHealthData(options: SourceParseOptions) {
     3
   );
 
-  // Merge the results
-  const baseInferenceOptions = { imagePaths, visionParser, documentParser };
+  // Merge the results with appropriate prompts
+  const baseInferenceOptions = { imagePaths, visionParser, documentParser, useClinicalPrompts };
   const [
     { finalHealthCheckup: resultTotal, mergedTestResultPage: resultTotalPages },
     { finalHealthCheckup: resultText, mergedTestResultPage: resultTextPages },
@@ -429,10 +494,14 @@ export async function parseHealthData(options: SourceParseOptions) {
     }
   }
 
-  const healthCheckup = HealthCheckupSchema.parse({
+  // Enhance with vital signs extraction
+  const ocrTextForVitalSigns = (ocrResults as { text?: string })?.text || "";
+  const enhancedResult = enhanceVitalSigns({
     ...resultTotal,
     test_result: mergedTestResult,
-  });
+  }, ocrTextForVitalSigns);
+
+  const healthCheckup = HealthCheckupSchema.parse(enhancedResult);
 
   return { data: [healthCheckup], pages: [mergedPageResult], ocrResults: [ocrResults] };
 }

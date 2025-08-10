@@ -279,7 +279,7 @@ export class DoclingDocumentParser extends BaseDocumentParser {
       }
 
       const data = await response.json();
-      if (!data.document || !data.document.md_content) {
+      if (!data.document || data.document.md_content === null || data.document.md_content === undefined) {
         console.error("Docling parse response:", data);
         throw new Error("No `document.md_content` in docling-serve response");
       }

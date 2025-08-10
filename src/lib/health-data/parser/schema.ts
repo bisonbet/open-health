@@ -1516,6 +1516,30 @@ export const HealthCheckupSchema = z.object({
                 .optional().nullable()
                 .describe("Pulse, heart rate"),
 
+            body_temperature: z
+                .object({
+                    unit: z.string().optional().nullable().describe("Unit"),
+                    value: z.string().optional().nullable().describe("Value"),
+                })
+                .optional().nullable()
+                .describe("Body temperature"),
+
+            oxygen_saturation: z
+                .object({
+                    unit: z.string().optional().nullable().describe("Unit"),
+                    value: z.string().optional().nullable().describe("Value"),
+                })
+                .optional().nullable()
+                .describe("Oxygen saturation level"),
+
+            blood_pressure: z
+                .object({
+                    unit: z.string().optional().nullable().describe("Unit"),
+                    value: z.string().optional().nullable().describe("Value"),
+                })
+                .optional().nullable()
+                .describe("Blood pressure in systolic/diastolic format"),
+
             abdominal_pelvic_ct: z
                 .object({
                     unit: z.string().optional().nullable().describe("Unit"),
@@ -2512,6 +2536,41 @@ export const HealthCheckupSchema = z.object({
             source: z.enum(['text', 'image', 'both']).optional().nullable().describe("Data source"),
         })
         .describe("Test results"),
+    
+    // Clinical document data for non-lab reports
+    clinical_data: z
+        .object({
+            document_type: z.string().optional().nullable().describe("Type of clinical document (consultation, discharge, imaging, etc.)"),
+            patient_name: z.string().optional().nullable().describe("Patient name"),
+            provider_name: z.string().optional().nullable().describe("Healthcare provider name"),
+            institution: z.string().optional().nullable().describe("Healthcare institution/clinic name"),
+            visit_date: z.string().optional().nullable().describe("Date of visit/consultation (yyyy-mm-dd)"),
+            chief_complaint: z.string().optional().nullable().describe("Chief complaint or reason for visit"),
+            history_present_illness: z.string().optional().nullable().describe("History of present illness"),
+            physical_examination: z.string().optional().nullable().describe("Physical examination findings"),
+            assessment: z.string().optional().nullable().describe("Clinical assessment or diagnosis"),
+            diagnosis: z.string().optional().nullable().describe("Primary and secondary diagnoses"),
+            treatment_plan: z.string().optional().nullable().describe("Treatment plan or recommendations"),
+            medications: z.string().optional().nullable().describe("Prescribed medications"),
+            follow_up: z.string().optional().nullable().describe("Follow-up instructions"),
+            imaging_findings: z.string().optional().nullable().describe("Imaging study results and findings"),
+            lab_orders: z.string().optional().nullable().describe("Laboratory tests ordered"),
+            procedures: z.string().optional().nullable().describe("Procedures performed or planned"),
+            vital_signs_narrative: z.string().optional().nullable().describe("Vital signs mentioned in narrative form"),
+            allergies_mentioned: z.string().optional().nullable().describe("Allergies mentioned in document"),
+            medical_history_mentioned: z.string().optional().nullable().describe("Relevant medical history mentioned"),
+            social_history: z.string().optional().nullable().describe("Social history (smoking, alcohol, etc.)"),
+            family_history: z.string().optional().nullable().describe("Family history mentioned"),
+            review_of_systems: z.string().optional().nullable().describe("Review of systems findings"),
+            clinical_notes: z.string().optional().nullable().describe("Additional clinical notes or observations"),
+            discharge_instructions: z.string().optional().nullable().describe("Discharge instructions if applicable"),
+            return_precautions: z.string().optional().nullable().describe("When to return or seek care"),
+            summary: z.string().optional().nullable().describe("Clinical summary or key points"),
+            confidence: z.number().optional().nullable().describe("OCR confidence score"),
+            source: z.enum(['text', 'image', 'both']).optional().nullable().describe("Data source"),
+        })
+        .optional().nullable()
+        .describe("Clinical document data for narrative medical records"),
 });
 
 export type HealthCheckupType = z.infer<typeof HealthCheckupSchema>;

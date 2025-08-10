@@ -9,8 +9,7 @@ pid=$!
 sleep 5
 
 echo "🔴 Retrieving necessary models..."
-ollama pull gemma3:4b
-ollama pull deepseek-r1:8b
+ollama pull qwen2.5vl:7b
 echo "🟢 Done!"
 
 # Wait for Ollama process to finish.

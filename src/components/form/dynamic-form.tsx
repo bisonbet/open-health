@@ -19,6 +19,13 @@ interface DynamicFormProps {
     onChange: (key: string, value: string | number | readonly string[] | undefined) => void;
 }
 
+// Helper function to get nested object values using dot notation
+function getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => {
+        return current && typeof current === 'object' ? current[key] : undefined;
+    }, obj);
+}
+
 export default function DynamicForm({fields, data, onChange}: DynamicFormProps) {
     const t = useTranslations('DynamicForm')
     return (
@@ -35,13 +42,13 @@ export default function DynamicForm({fields, data, onChange}: DynamicFormProps) 
                         {field.type === 'textarea' ? (
                             <textarea
                                 className={`w-full p-2 border rounded ${field.key === 'description' ? 'min-h-[200px]' : 'min-h-[100px]'}`}
-                                value={data[field.key] || ''}
+                                value={getNestedValue(data, field.key) || ''}
                                 onChange={(e) => onChange(field.key, e.target.value)}
                             />
                         ) : field.type === 'select' ? (
                             <select
                                 className="w-full p-2 border rounded"
-                                value={data[field.key] || field.defaultValue || ''}
+                                value={getNestedValue(data, field.key) || field.defaultValue || ''}
                                 onChange={(e) => onChange(field.key, e.target.value)}
                             >
                                 <option value="">{t('selectPlaceholder')}</option>
@@ -58,9 +65,9 @@ export default function DynamicForm({fields, data, onChange}: DynamicFormProps) 
                                         {subField.type === 'select' ? (
                                             <select
                                                 className="w-full p-2 border rounded"
-                                                value={data[field.key]?.[subField.key] || subField.defaultValue || ''}
+                                                value={getNestedValue(data, field.key)?.[subField.key] || subField.defaultValue || ''}
                                                 onChange={(e) => {
-                                                    const currentValue = data[field.key] || {};
+                                                    const currentValue = getNestedValue(data, field.key) || {};
                                                     let newValue = {...currentValue, [subField.key]: e.target.value};
                                                     if (field.fields?.some(f => f.defaultValue && !currentValue[f.key])) {
                                                         field.fields.forEach(f => {
@@ -83,9 +90,9 @@ export default function DynamicForm({fields, data, onChange}: DynamicFormProps) 
                                                 type={subField.type}
                                                 placeholder={subField.placeholder}
                                                 className="w-full p-2 border rounded"
-                                                value={data[field.key]?.[subField.key] || ''}
+                                                value={getNestedValue(data, field.key)?.[subField.key] || ''}
                                                 onChange={(e) => {
-                                                    const currentValue = data[field.key] || {};
+                                                    const currentValue = getNestedValue(data, field.key) || {};
                                                     let newValue = {...currentValue, [subField.key]: e.target.value};
                                                     if (field.fields?.some(f => f.defaultValue && !currentValue[f.key])) {
                                                         field.fields.forEach(f => {
@@ -105,7 +112,7 @@ export default function DynamicForm({fields, data, onChange}: DynamicFormProps) 
                             <input
                                 type={field.type}
                                 className="w-full p-2 border rounded"
-                                value={data[field.key] || ''}
+                                value={getNestedValue(data, field.key) || ''}
                                 onChange={(e) => onChange(field.key, e.target.value)}
                             />
                         )}

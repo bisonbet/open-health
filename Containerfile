@@ -1,67 +1,70 @@
-FROM node:lts-alpine
-LABEL authors="OpenHealth"
-
-# Install dependencies
-RUN apk add -U graphicsmagick ghostscript vips-dev fftw-dev build-base libpng libpng-dev poppler-utils
-
+# Stage 1: Install dependencies
+# This stage is dedicated to installing npm packages. It will only be re-run
+# when your package.json or package-lock.json changes, greatly speeding up builds.
+FROM node:lts-alpine AS deps
 WORKDIR /app
 
-# Copy package.json and prisma schema first to leverage Docker cache
+# Install dependencies needed for `npm ci`
 COPY package.json package-lock.json* ./
-COPY prisma/ ./prisma/
+RUN npm ci
 
-# Install npm packages
-RUN npm ci && npm cache clean --force
-
-# Copy the rest of the application code
+# Stage 2: Build the application
+# This stage builds your Next.js app. It re-uses the dependencies from the 'deps' stage
+# and will be re-run only when your source code changes.
+FROM node:lts-alpine AS builder
+WORKDIR /app
+# Copy dependencies from the previous stage
+COPY --from=deps /app/node_modules ./node_modules
+# Copy the rest of the source code. A .dockerignore file will prevent
+# unnecessary files from being copied.
 COPY . .
 
-# Set build arguments
-ARG OLLAMA_URL
-ARG DOCLING_URL
-ARG AUTH_SECRET
-ARG ENCRYPTION_KEY
-ARG NEXT_PUBLIC_URL
+# Build the app. `npx prisma generate` is part of your `build` script.
+# The `standalone` output mode in next.config.js creates a minimal build artifact.
+RUN npm run build
 
-# Set environment variables from build arguments with explicit default values
-ENV OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
-ENV DOCLING_URL=${DOCLING_URL:-http://docling-serve:5001}
-ENV AUTH_SECRET=${AUTH_SECRET}
-ENV ENCRYPTION_KEY=${ENCRYPTION_KEY}
-ENV NEXT_PUBLIC_URL=${NEXT_PUBLIC_URL:-http://localhost:3000}
+# Stage 3: Production image
+# This is the final, lean image that will be deployed. It only contains
+# the minimal files and dependencies needed to run the application.
+FROM node:lts-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the application, create user, and set permissions
-RUN npm run build && \
-    adduser --disabled-password ohuser && \
-    chown -R ohuser .
+# Install only RUNTIME system dependencies. `build-base` and `-dev` packages are not needed.
+RUN apk add --no-cache graphicsmagick ghostscript vips libpng poppler-utils
 
-# Switch to the non-root user
+# Create a non-root user for security.
+RUN adduser --disabled-password ohuser
+
+# Copy the minimal application artifacts from the 'builder' stage.
+COPY --from=builder --chown=ohuser:ohuser /app/.next/standalone ./
+COPY --from=builder --chown=ohuser:ohuser /app/.next/static ./.next/static
+COPY --from=builder --chown=ohuser:ohuser /app/public ./public
+COPY --from=builder --chown=ohuser:ohuser /app/prisma ./prisma
+# Create startup script inline
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo 'set -e' >> /app/start.sh && \
+    echo 'echo "Container starting..."' >> /app/start.sh && \
+    echo 'if [ -f "prisma/data/llm-provider.json" ]; then' >> /app/start.sh && \
+    echo '    echo "Substituting placeholder in prisma/data/llm-provider.json with NEXT_PUBLIC_OLLAMA_URL: [$NEXT_PUBLIC_OLLAMA_URL]"' >> /app/start.sh && \
+    echo '    sed "s|\${NEXT_PUBLIC_OLLAMA_URL}|$NEXT_PUBLIC_OLLAMA_URL|g" prisma/data/llm-provider.json > prisma/data/llm-provider.json.tmp && \' >> /app/start.sh && \
+    echo '    mv prisma/data/llm-provider.json.tmp prisma/data/llm-provider.json' >> /app/start.sh && \
+    echo '    echo "Substitution successful."' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '    echo "Warning: prisma/data/llm-provider.json not found. Skipping substitution."' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo 'echo "---"' >> /app/start.sh && \
+    echo 'echo "Starting application..."' >> /app/start.sh && \
+    echo 'exec "$@"' >> /app/start.sh && \
+    chmod +x /app/start.sh && \
+    chown ohuser:ohuser /app/start.sh
+
 USER ohuser
 
-# Expose the application port
 EXPOSE 3000
 
-# Use shell command directly
-CMD /bin/sh -c '\
-    echo "Container starting..." && \
-    echo "Current OLLAMA_URL from environment: [$OLLAMA_URL]" && \
-    echo "Current DOCLING_URL from environment: [$DOCLING_URL]" && \
-    echo "---" && \
-    echo "Contents of prisma/data/llm-provider.json BEFORE substitution:" && \
-    cat prisma/data/llm-provider.json || echo "Warning: prisma/data/llm-provider.json not found or cat command failed." && \
-    echo "---" && \
-    echo "Attempting to substitute placeholder in prisma/data/llm-provider.json with OLLAMA_URL: [$OLLAMA_URL]" && \
-    sed -i "s|\"apiURL\": \"\${OLLAMA_URL}\"|\"apiURL\": \"$OLLAMA_URL\"|g" prisma/data/llm-provider.json && \
-    echo "Substitution command executed." && \
-    echo "---" && \
-    echo "Contents of prisma/data/llm-provider.json AFTER substitution:" && \
-    cat prisma/data/llm-provider.json || echo "Warning: cat command failed after sed." && \
-    echo "---" && \
-    echo "Running Prisma commands..." && \
-    npx prisma generate && \
-    npx prisma db push --accept-data-loss && \
-    npx prisma db seed && \
-    echo "---" && \
-    echo "Starting application (npm start)..." && \
-    npm start'
+ENTRYPOINT ["sh", "/app/start.sh"]
+
+CMD ["node", "server.js"]

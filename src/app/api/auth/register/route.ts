@@ -4,6 +4,9 @@ import prisma from "@/lib/prisma";
 import assistantModeSeed from "../../../../../prisma/data/assistant-mode.json";
 import llmProviderSeed from "../../../../../prisma/data/llm-provider.json";
 
+// Force Node.js runtime for bcryptjs compatibility
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
     try {
         const {username, password} = await request.json();

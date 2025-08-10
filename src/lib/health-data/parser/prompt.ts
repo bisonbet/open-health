@@ -36,6 +36,8 @@ Step 2: Cross-Validation and Prioritization
 
 Step 3: Handle Special Cases
 *   For multi-component tests (e.g., blood pressure), create **separate snake_case keys** with their respective values formatted using the required value/unit object structure.
+*   For blood pressure in "systolic/diastolic" format (e.g., "136/84"), create both a combined "blood_pressure" field and separate "systolic_blood_pressure" and "diastolic_blood_pressure" fields.
+*   For vital signs data, look for temperature, pulse, oxygen saturation, height, weight, and BMI even if not explicitly labeled.
 *   If tests are labeled (e.g., left/right), incorporate this into the snake_case key if appropriate (e.g., \`left_vision\`, \`right_vision\`).
 
 Step 4: Final JSON Construction
@@ -53,11 +55,22 @@ Step 4: Final JSON Construction
 5. For values with asterisks or special markers, include these in the value field
 
 **Value Validation Rules:**
-1. Blood pressure values should be in format "systolic/diastolic"
-2. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
-3. Dates should be in yyyy-mm-dd format
-4. Percentages should be numeric values without the % symbol
-5. Ranges should be split into separate min/max values
+1. Blood pressure values should be in format "systolic/diastolic" (e.g., "136/84"). Also extract as separate systolic_blood_pressure and diastolic_blood_pressure fields when possible
+2. Temperature values should include units (°C, °F) and method when available (e.g., "36.1", "°C")
+3. Oxygen saturation should be numeric without % symbol (e.g., "97")
+4. Pulse/heart rate should be numeric with "bpm" unit when available
+5. Height should include units (cm, ft/in) and convert when possible
+6. Weight should include units (kg, lbs) and convert when possible
+7. BMI should be numeric with "kg/m2" unit
+8. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
+9. Dates should be in yyyy-mm-dd format
+10. Percentages should be numeric values without the % symbol
+11. Ranges should be split into separate min/max values
+
+**Vital Signs Pattern Recognition:**
+- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg", "BMI: X"
+- Extract these even if they appear in unstructured text or mixed with other data
+- Be flexible with formatting variations (spaces, colons, units in different positions)
 
 **Final Reminder:** Adherence to the specified JSON structure (\`test_result\` key, snake_case inner keys, value/unit objects) is paramount. Double-check your final JSON output before finishing.`
         ],
@@ -83,15 +96,28 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 **Extraction Guidelines:**
 1.  Extract only the actual test results from the text. Ignore reference ranges or irrelevant text/numbers.
 2.  For multi-component tests (e.g., blood pressure), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
-3.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
-4.  Avoid duplicate test keys within \`test_result\`.
+3.  For blood pressure in "systolic/diastolic" format (e.g., "136/84"), create both a combined "blood_pressure" field and separate "systolic_blood_pressure" and "diastolic_blood_pressure" fields.
+4.  Look for vital signs patterns even in unstructured text: temperature, pulse, blood pressure, oxygen saturation, height, weight, BMI.
+5.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
+6.  Avoid duplicate test keys within \`test_result\`.
 
 **Value Validation Rules:**
-1. Blood pressure values should be in format "systolic/diastolic"
-2. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
-3. Dates should be in yyyy-mm-dd format
-4. Percentages should be numeric values without the % symbol
-5. Ranges should be split into separate min/max values
+1. Blood pressure values should be in format "systolic/diastolic" (e.g., "136/84"). Also extract as separate systolic_blood_pressure and diastolic_blood_pressure fields when possible
+2. Temperature values should include units (°C, °F) and method when available (e.g., "36.1", "°C")
+3. Oxygen saturation should be numeric without % symbol (e.g., "97")
+4. Pulse/heart rate should be numeric with "bpm" unit when available
+5. Height should include units (cm, ft/in) and convert when possible
+6. Weight should include units (kg, lbs) and convert when possible
+7. BMI should be numeric with "kg/m2" unit
+8. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
+9. Dates should be in yyyy-mm-dd format
+10. Percentages should be numeric values without the % symbol
+11. Ranges should be split into separate min/max values
+
+**Vital Signs Pattern Recognition:**
+- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg", "BMI: X"
+- Extract these even if they appear in unstructured text or mixed with other data
+- Be flexible with formatting variations (spaces, colons, units in different positions)
 
 **Final Check:** Ensure the final JSON strictly follows the format described above: \`test_result\` key, **snake_case** inner keys, and value/unit objects inside.`
         ],
@@ -116,17 +142,150 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
 1.  Carefully analyze the image to identify test names, values, and units. Be mindful of potential OCR inaccuracies.
 2.  Extract only the actual test results. Do not extract reference ranges or other non-result text/numbers.
 3.  For multi-component tests (e.g., blood pressure), create separate **snake_case** keys with their values formatted using the required value/unit object structure.
-4.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
-5.  Avoid duplicate test keys within \`test_result\`. If a test appears multiple times, select the clearest reading.
+4.  For blood pressure in "systolic/diastolic" format (e.g., "136/84"), create both a combined "blood_pressure" field and separate "systolic_blood_pressure" and "diastolic_blood_pressure" fields.
+5.  Look for vital signs patterns even in unstructured text: temperature, pulse, blood pressure, oxygen saturation, height, weight, BMI.
+6.  Ensure results are correctly labeled (e.g., left/right) if applicable, incorporating this into the snake_case key if necessary.
+7.  Avoid duplicate test keys within \`test_result\`. If a test appears multiple times, select the clearest reading.
 
 **Value Validation Rules:**
-1. Blood pressure values should be in format "systolic/diastolic"
-2. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
-3. Dates should be in yyyy-mm-dd format
-4. Percentages should be numeric values without the % symbol
-5. Ranges should be split into separate min/max values
+1. Blood pressure values should be in format "systolic/diastolic" (e.g., "136/84"). Also extract as separate systolic_blood_pressure and diastolic_blood_pressure fields when possible
+2. Temperature values should include units (°C, °F) and method when available (e.g., "36.1", "°C")
+3. Oxygen saturation should be numeric without % symbol (e.g., "97")
+4. Pulse/heart rate should be numeric with "bpm" unit when available
+5. Height should include units (cm, ft/in) and convert when possible
+6. Weight should include units (kg, lbs) and convert when possible
+7. BMI should be numeric with "kg/m2" unit
+8. Lab values should include appropriate units (mg/dL, mmol/L, etc.)
+9. Dates should be in yyyy-mm-dd format
+10. Percentages should be numeric values without the % symbol
+11. Ranges should be split into separate min/max values
+
+**Vital Signs Pattern Recognition:**
+- Look for patterns like "Temperature: X°C", "Pulse: X", "Blood Pressure: X/Y", "Oxygen Level: X%", "Height: X cm", "Weight: X kg", "BMI: X"
+- Extract these even if they appear in unstructured text or mixed with other data
+- Be flexible with formatting variations (spaces, colons, units in different positions)
 
 **Final Check:** Ensure the final JSON strictly follows the format described: \`test_result\` key, **snake_case** inner keys, and value/unit objects inside.`
+        ],
+        ["human", [{ type: "image_url", image_url: { url: '{image_data}' } }]],
+    ],
+
+    // Clinical document prompts for narrative medical records
+    clinicalBoth: [
+        [
+            "human",
+            `You are a medical records analyst specializing in extracting structured information from clinical documents. Your task is to analyze BOTH text and image data to extract clinical information and output it in a **strict JSON format**.
+
+**Critical Output Format Requirements:**
+1. The entire output MUST be a single JSON object.
+2. The JSON object MUST have TWO top-level keys: \`test_result\` and \`clinical_data\`.
+3. \`test_result\` should contain any structured lab values/vital signs found (using the same format as before).
+4. \`clinical_data\` should contain the clinical narrative information extracted from the document.
+5. Both sections can be populated if the document contains both types of data.
+6. If no clinical data is found, \`clinical_data\` should be null.
+7. If no test results are found, \`test_result\` should be an empty object.
+
+**Clinical Data Extraction Guidelines:**
+Extract the following clinical information when available:
+- Document type (consultation note, discharge summary, imaging report, etc.)
+- Patient and provider information
+- Visit date and institution
+- Chief complaint and reason for visit
+- History of present illness
+- Physical examination findings
+- Clinical assessment and diagnosis
+- Treatment plan and medications
+- Follow-up instructions
+- Imaging findings and lab orders
+- Procedures performed
+- Vital signs mentioned in narrative
+- Allergies, medical history, social history
+- Review of systems
+- Clinical notes and observations
+- Discharge instructions and return precautions
+- Clinical summary
+
+**Step-by-Step Process:**
+1. First, scan for any structured test results (lab values, vital signs) and extract them to \`test_result\`
+2. Then, analyze the document for clinical narrative content and extract to \`clinical_data\`
+3. Cross-validate information between text and image sources
+4. Prioritize clear, complete information over partial or unclear data
+5. Use medical terminology accurately and preserve clinical context
+
+**Final Output:** Return a JSON object with "test_result" and "clinical_data" keys.`
+        ],
+        ["human", 'This is the parsed text:\n{context}'],
+        ["human", [{ type: "image_url", image_url: { url: '{image_data}' } }]],
+    ],
+
+    clinicalText: [
+        [
+            "human",
+            `As a medical records analyst, extract both structured test results and clinical information from the provided medical document text.
+
+**Required Output Format:**
+1. The entire output MUST be a single JSON object.
+2. The JSON object MUST have TWO top-level keys: \`test_result\` and \`clinical_data\`.
+3. \`test_result\` should contain structured lab values/vital signs (snake_case keys with value/unit objects).
+4. \`clinical_data\` should contain clinical narrative information.
+5. If no clinical data is found, \`clinical_data\` should be null.
+6. If no test results are found, \`test_result\` should be an empty object.
+
+**Clinical Data Fields to Extract:**
+- document_type: Type of clinical document
+- patient_name: Patient name
+- provider_name: Healthcare provider name
+- institution: Healthcare institution/clinic
+- visit_date: Date of visit (yyyy-mm-dd format)
+- chief_complaint: Main reason for visit
+- history_present_illness: Current illness history
+- physical_examination: Physical exam findings
+- assessment: Clinical assessment
+- diagnosis: Primary and secondary diagnoses
+- treatment_plan: Treatment recommendations
+- medications: Prescribed medications
+- follow_up: Follow-up instructions
+- imaging_findings: Imaging results
+- lab_orders: Laboratory tests ordered
+- procedures: Procedures performed
+- vital_signs_narrative: Vital signs in narrative form
+- allergies_mentioned: Allergies mentioned
+- medical_history_mentioned: Relevant medical history
+- social_history: Social history (smoking, alcohol, etc.)
+- family_history: Family history mentioned
+- review_of_systems: Review of systems
+- clinical_notes: Additional clinical observations
+- discharge_instructions: Discharge instructions
+- return_precautions: When to return for care
+- summary: Clinical summary
+
+**Extract both test results AND clinical narrative data when present.**`
+        ],
+        ["human", 'This is the parsed text:\n{context}']
+    ],
+
+    clinicalImage: [
+        [
+            "human",
+            `As a medical records analyst, extract both structured test results and clinical information from the provided medical document image.
+
+**Critical Output Format Requirements:**
+1. The entire output MUST be a single JSON object.
+2. The JSON object MUST have TWO top-level keys: \`test_result\` and \`clinical_data\`.
+3. \`test_result\` should contain structured lab values/vital signs (snake_case keys with value/unit objects).
+4. \`clinical_data\` should contain clinical narrative information extracted from the image.
+5. If no clinical data is found, \`clinical_data\` should be null.
+6. If no test results are found, \`test_result\` should be an empty object.
+
+**From the image, extract:**
+- Any structured lab values or vital signs → \`test_result\`
+- Clinical narrative information → \`clinical_data\` (using the same fields as text extraction)
+- Patient demographics and visit information
+- Clinical assessments, diagnoses, and treatment plans
+- Provider notes and recommendations
+- Any medical observations or findings
+
+**Be careful with OCR accuracy and prioritize clear, readable information.**`
         ],
         ["human", [{ type: "image_url", image_url: { url: '{image_data}' } }]],
     ]
@@ -137,17 +296,19 @@ Your primary goal is to output a JSON object adhering strictly to the specified 
  *
  * @param excludeImage
  * @param excludeText
+ * @param useClinicalPrompts - Whether to use clinical document prompts
  */
-export function getParsePrompt({ excludeImage, excludeText }: {
+export function getParsePrompt({ excludeImage, excludeText, useClinicalPrompts = false }: {
     excludeImage: boolean,
-    excludeText: boolean
+    excludeText: boolean,
+    useClinicalPrompts?: boolean
 }): BaseMessagePromptTemplateLike[] {
     if (!excludeImage && !excludeText) {
-        return prompts.both
+        return prompts[useClinicalPrompts ? 'clinicalBoth' : 'both']
     } else if (excludeImage && !excludeText) {
-        return prompts.onlyText
+        return prompts[useClinicalPrompts ? 'clinicalText' : 'onlyText']
     } else if (!excludeImage && excludeText) {
-        return prompts.onlyImage
+        return prompts[useClinicalPrompts ? 'clinicalImage' : 'onlyImage']
     } else {
         throw new Error('Invalid prompt type')
     }
