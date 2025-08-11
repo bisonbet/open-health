@@ -17,14 +17,13 @@ export default defineConfig({
             randomize: true,
         },
     },
-    // Temporarily disable build extensions to see if they're causing the hang
-    // build: {
-    //     extensions: [
-    //         aptGet({packages: ["ghostscript", "graphicsmagick"]}),
-    //         prismaExtension({
-    //             schema: "prisma/schema.prisma",
-    //         }),
-    //     ]
-    // },
+    build: {
+        extensions: [
+            aptGet({packages: ["ghostscript", "graphicsmagick"]}),
+            prismaExtension({
+                schema: "prisma/schema.prisma",
+            }),
+        ]
+    },
     dirs: ["./src/trigger"],
 });
